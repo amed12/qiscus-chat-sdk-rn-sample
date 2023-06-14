@@ -232,7 +232,6 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log("halo")
 		console.log(message)
 		this.setState((state) => ({
 			messages: {
@@ -380,46 +379,47 @@ export default class ChatScreen extends React.Component {
 			{
 				isModalVisible: false,
 			});
-		ImagePicker.launchImageLibrary(
-			{
-				mediaType: "mixed",
-				includeBase64: false,
-				selectionLimit: 0,
-				includeExtra: true
+		const options = {
+			title: 'Select Image',
+			storageOptions: {
+				skipBackup: true,
+				path: 'images',
 			},
-			null,
-		).then((resp) => {
-			if (resp.didCancel) return console.log('user cancel');
-			if (resp.errorMessage)
-				return console.log('error when getting file', resp.errorMessage);
-			resp.assets.map((responses) => {
-				let fileName;
-				if (!fileName) {
-					const _fileName = responses.uri.split('/').pop();
-					const _fileType = responses.type
-						? responses.type.split('/').pop()
-						: 'jpeg';
-					fileName = `${_fileName}.${_fileType}`;
-				}
-				const source = {
-					uri: responses.uri,
-					name: fileName,
-					type: responses.type,
-					size: responses.fileSize,
-				};
-				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-				if (isNaN(sizeInMB) || sizeInMB === 0) {
-					return Promise.reject('File size required or empty');
-				}
-				if (!(sizeInMB <= 2)) {
-					// Example limitation
-					return Promise.reject('File size cannot over from 2mb and cannot empty');
-				}
-				this._onSendingFileOrMedia(source)
-			})
-		}).catch(this._handleError);
-	};
-
+		};
+		ImagePicker.showImagePicker(options, (response) => {
+			console.log('Response = ', response);
+			if (response.didCancel) {
+				console.log('User cancelled image picker');
+				return
+			} else if (response.error) {
+				console.log('ImagePicker Error: ', response.error);
+				return
+			}
+			let fileName;
+			if (!fileName) {
+				const _fileName = response.uri.split('/').pop();
+				const _fileType = response.type
+					? response.type.split('/').pop()
+					: 'jpeg';
+				fileName = `${_fileName}.${_fileType}`;
+			}
+			const source = {
+				uri: response.uri,
+				name: fileName,
+				type: response.type,
+				size: response.fileSize,
+			};
+			let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
+			if (isNaN(sizeInMB) || sizeInMB === 0) {
+				return Promise.reject('File size required or empty');
+			}
+			if (!(sizeInMB <= 2)) {
+				// Example limitation
+				return Promise.reject('File size cannot over from 2mb and cannot empty');
+			}
+			this._onSendingFileOrMedia(source)
+		});
+	}
 	_addMessage = (message, scroll = false) =>
 		new Promise((resolve) => {
 			this.setState(
