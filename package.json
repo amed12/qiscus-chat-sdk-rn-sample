@@ -20,6 +20,7 @@
     "axios": "^0.21.1",
     "css-to-rn.macro": "^0.3.0",
     "date-fns": "^2.21.3",
+    "fetch-to-curl": "^0.6.0",
     "hooks.macro": "^1.1.2",
     "lodash.debounce": "^4.0.8",
     "mitt": "^2.1.0",
