@@ -76,7 +76,8 @@ export let SupportDocumentType = [
 	'ods',
 	'odt',
 	'pdf',
-	'apk'
+	'apk',
+	'txt'
 ];
 
 /*
@@ -152,3 +153,5 @@ export function setDeviceToken(token) {
 
 	return qiscus.registerDeviceToken(token);
 }
+
+export const uploadAttachment = (baseUrl) => `${baseUrl}/api/v2/sdk/upload`;
