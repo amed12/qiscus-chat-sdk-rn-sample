@@ -23,8 +23,9 @@ import Toolbar from 'components/Toolbar';
 import MessageList from 'components/MessageList';
 import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
+import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile, uploadAttachment} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
+import fetchToCurl from "fetch-to-curl";
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -452,6 +453,38 @@ export default class ChatScreen extends React.Component {
 			},
 		}));
 	};
+	_uploadMessage = (file) =>
+		new Promise(async (resolve, reject) => {
+			let formData = new FormData();
+			formData.append("file", file);
+			let tokenSdk = Qiscus.qiscus?.userData?.token;
+			let appId = Qiscus.qiscus?.AppId;
+			let userId = Qiscus.qiscus?.user_id;
+			let version = Qiscus.qiscus?.version;
+			const headerUpload = {
+				'qiscus_sdk_app_id': appId,
+				'qiscus_sdk_user_id': userId,
+				'qiscus_sdk_token': tokenSdk,
+				'qiscus_chat_version': version
+			};
+			const options = {
+				headers: headerUpload,
+				method: 'post',
+				body: formData
+			};
+			console.log("Please inform curl below!!");
+			console.log(fetchToCurl(uploadAttachment(Qiscus.qiscus?.baseURL), options));
+			let res = await fetch(
+				uploadAttachment(Qiscus.qiscus?.baseURL),
+				options
+			);
+			let responseJson = await res.json();
+			if (responseJson.status === 200) {
+				resolve(responseJson.results.file)
+			}else {
+				reject(responseJson)
+			}
+		});
 
 	_loadMore = () => {
 		if (!this.state.isLoadMoreable) {
@@ -528,35 +561,30 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return Qiscus.qiscus.upload(obj, (error, progress, fileURL) => {
-					if (error) {
-						return console.log('error when uploading', error);
-					}
-					if (progress) {
-						return console.log(progress.percent);
-					}
-					if (fileURL != null) {
-						const payload = JSON.stringify({
-							type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
-							content: {
-								url: fileURL,
-								file_name: mediaOrDocs.name,
-								caption: '',
-							},
+				return this._uploadMessage(obj)
+			})
+			.then(res =>{
+				if (res.url) {
+					const payload = JSON.stringify({
+						type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
+						content: {
+							url: res.url,
+							file_name: mediaOrDocs.name,
+							caption: '',
+						},
+					});
+					Qiscus.qiscus
+						.sendComment(
+							this.state.room.id,
+							message.message,
+							message.uniqueId,
+							'custom', // message type
+							payload,
+						)
+						.then((resp) => {
+							this._updateMessage(message, resp);
 						});
-						Qiscus.qiscus
-							.sendComment(
-								this.state.room.id,
-								message.message,
-								message.uniqueId,
-								'custom', // message type
-								payload,
-							)
-							.then((resp) => {
-								this._updateMessage(message, resp);
-							});
-					}
-				});
+				}
 			})
 			.catch((error) => {
 				console.log('Catch me if you can', error);
