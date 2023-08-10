@@ -450,6 +450,23 @@ export default class ChatScreen extends React.Component {
 	};
 	_uploadMessage = (file) =>
 		new Promise(async (resolve, reject) => {
+			/*
+			Qiscus.qiscus.upload(file, (error, progress, fileURL) => {
+				if (error) {
+					return console.log('error when uploading', error);
+				}
+				if (progress) {
+					return console.log(progress.percent);
+				}
+				if (fileURL != null) {
+					resolve({
+						url: fileURL
+					})
+				}else {
+					reject("Upload failed")
+				}
+			})
+			 */
 			let tokenSdk = Qiscus.qiscus?.userData?.token;
 			let appId = Qiscus.qiscus?.AppId;
 			let userId = Qiscus.qiscus?.user_id;
@@ -570,7 +587,7 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return this._uploadMessage(obj)
+				return this._uploadMessage(obj,message)
 			})
 			.then(res =>{
 				if (res.url) {
