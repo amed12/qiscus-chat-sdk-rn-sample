@@ -1,17 +1,6 @@
 import React from 'react';
-import {
-	Button,
-	Image, Modal,
-	StatusBar,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from 'react-native';
-import DocumentPicker, {
-	isInProgress,
-	types,
-} from 'react-native-document-picker';
+import {Button, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
+import DocumentPicker, {isInProgress, types,} from 'react-native-document-picker';
 import css from 'css-to-rn.macro';
 import debounce from 'lodash.debounce';
 import xs from 'xstream';
@@ -25,6 +14,7 @@ import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
 import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
+import RNFetchBlob from "rn-fetch-blob";
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -45,14 +35,14 @@ export default class ChatScreen extends React.Component {
 		}
 		const subscription1 = Qiscus.isLogin$()
 			.take(1)
-			.map(() => xs.from(Qiscus.qiscus.getRoomById(roomId)))
+			.map(() => xs.from(Qiscus.qiscus?.getRoomById(roomId)))
 			.flatten()
 			.subscribe({
 				next: (room) => this.setState({ room }),
 			});
 		const subscription2 = Qiscus.isLogin$()
 			.take(1)
-			.map(() => xs.from(Qiscus.qiscus.loadComments(roomId)))
+			.map(() => xs.from(Qiscus.qiscus?.loadComments(roomId)))
 			.flatten()
 			.subscribe({
 				next: (messages) => {
@@ -86,7 +76,7 @@ export default class ChatScreen extends React.Component {
 	}
 
 	componentWillUnmount() {
-		Qiscus.qiscus.exitChatRoom();
+		Qiscus.qiscus?.exitChatRoom();
 
 		this.subscription && this.subscription.unsubscribe();
 	}
@@ -232,7 +222,6 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log("halo")
 		console.log(message)
 		this.setState((state) => ({
 			messages: {
@@ -312,7 +301,7 @@ export default class ChatScreen extends React.Component {
 	_submitMessage = async (text) => {
 		const message = this._prepareMessage(text);
 		await this._addMessage(message, true);
-		const resp = await Qiscus.qiscus.sendComment(
+		const resp = await Qiscus.qiscus?.sendComment(
 			this.state.room.id,
 			text,
 			message.unique_temp_id
@@ -380,34 +369,33 @@ export default class ChatScreen extends React.Component {
 			{
 				isModalVisible: false,
 			});
-		ImagePicker.launchImageLibrary(
-			{
-				mediaType: "mixed",
-				includeBase64: false,
-				selectionLimit: 0,
-				includeExtra: true
+		const options = {
+			title: 'Select Image',
+			storageOptions: {
+				skipBackup: true,
+				path: 'images'
 			},
-			null,
-		).then((resp) => {
-			if (resp.didCancel) return console.log('user cancel');
-			if (resp.errorMessage)
-				return console.log('error when getting file', resp.errorMessage);
-			resp.assets.map((responses) => {
+		};
+		ImagePicker.showImagePicker(options,(resp) => {
+				console.log('masuk then', resp);
+				if (resp.didCancel) return console.log('user cancel');
+
 				let fileName;
 				if (!fileName) {
-					const _fileName = responses.uri.split('/').pop();
-					const _fileType = responses.type
-						? responses.type.split('/').pop()
+					const _fileName = resp.uri.split('/').pop();
+					const _fileType = resp.type
+						? resp.type.split('/').pop()
 						: 'jpeg';
 					fileName = `${_fileName}.${_fileType}`;
 				}
 				const source = {
-					uri: responses.uri,
+					uri: resp.uri,
 					name: fileName,
-					type: responses.type,
-					size: responses.fileSize,
+					type: resp.type,
+					size: resp.fileSize,
 				};
 				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
+				console.log("ini image", source, sizeInMB, fileName)
 				if (isNaN(sizeInMB) || sizeInMB === 0) {
 					return Promise.reject('File size required or empty');
 				}
@@ -416,10 +404,9 @@ export default class ChatScreen extends React.Component {
 					return Promise.reject('File size cannot over from 2mb and cannot empty');
 				}
 				this._onSendingFileOrMedia(source)
-			})
-		}).catch(this._handleError);
-	};
-
+			}
+		)
+	}
 	_addMessage = (message, scroll = false) =>
 		new Promise((resolve) => {
 			this.setState(
@@ -452,6 +439,62 @@ export default class ChatScreen extends React.Component {
 			},
 		}));
 	};
+
+	_generateCurlCommand = (baseUrl, headers, payload) => {
+		const headersString = Object.keys(headers)
+			.map(key => `-H '${key}: ${headers[key]}'`)
+			.join(' ');
+		return `curl --location --request POST '${baseUrl}' ${headersString} \
+--form 'file=@"${payload.filePath}"' \
+--form 'name="${payload.name}"' \
+--form 'type="${payload.type}"'`;
+	};
+	_uploadMessage = (file) =>
+		new Promise(async (resolve, reject) => {
+			let tokenSdk = Qiscus.qiscus?.userData?.token;
+			let appId = Qiscus.qiscus?.AppId;
+			let userId = Qiscus.qiscus?.user_id;
+			let version = Qiscus.qiscus?.version;
+			const headerUpload = {
+				'qiscus_sdk_app_id': appId,
+				'qiscus_sdk_user_id': userId,
+				'qiscus_sdk_token': tokenSdk,
+				'qiscus_chat_version': version,
+				'Content-Type': 'multipart/form-data'
+			};
+			console.log("Please inform curl below!!");
+			console.log(this._generateCurlCommand(uploadAttachment(Qiscus.qiscus?.baseURL), headerUpload, {
+				name : file.name,
+				type : file.type,
+				filePath : file.uri
+			}));
+			try {
+				const response = await RNFetchBlob.fetch(
+					'POST',
+					`${uploadAttachment(Qiscus.qiscus?.baseURL)}`,
+					 headerUpload,
+					[
+						{
+							name: 'file',
+							filename: file.name,
+							type: file.type,
+							data: RNFetchBlob.wrap(file.uri),
+						},
+					]
+				);
+
+				let responseJson = await response.json();
+
+				if (responseJson.status === 200) {
+					console.log('Upload response:', responseJson);
+					resolve(responseJson.results.file)
+				}else {
+					reject(responseJson)
+				}
+			} catch (error) {
+				console.error('Upload error:', error);
+			}
+		});
 
 	_loadMore = () => {
 		if (!this.state.isLoadMoreable) {
@@ -528,35 +571,29 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return Qiscus.qiscus.upload(obj, (error, progress, fileURL) => {
-					if (error) {
-						return console.log('error when uploading', error);
-					}
-					if (progress) {
-						return console.log(progress.percent);
-					}
-					if (fileURL != null) {
-						const payload = JSON.stringify({
-							type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
-							content: {
-								url: fileURL,
-								file_name: mediaOrDocs.name,
-								caption: '',
-							},
+				return this._uploadMessage(obj)
+			})
+			.then(res =>{
+				if (res.url) {
+					const payload = JSON.stringify({
+						type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
+						content: {
+							url: res.url,
+							file_name: mediaOrDocs.name,
+							caption: '',
+						},
+					});
+					Qiscus.qiscus?.sendComment(
+							this.state.room.id,
+							message.message,
+							message.uniqueId,
+							'custom', // message type
+							payload,
+						)
+						.then((resp) => {
+							this._updateMessage(message, resp);
 						});
-						Qiscus.qiscus
-							.sendComment(
-								this.state.room.id,
-								message.message,
-								message.uniqueId,
-								'custom', // message type
-								payload,
-							)
-							.then((resp) => {
-								this._updateMessage(message, resp);
-							});
-					}
-				});
+				}
 			})
 			.catch((error) => {
 				console.log('Catch me if you can', error);
