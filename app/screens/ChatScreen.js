@@ -588,7 +588,7 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return this._uploadMessage(obj,message)
+				return this._uploadMessage(obj)
 			})
 			.then(res =>{
 				if (res.url) {
