@@ -1,6 +1,18 @@
 import React from 'react';
-import {Button, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
-import DocumentPicker, {isInProgress, types,} from 'react-native-document-picker';
+import {
+	Button,
+	Image,
+	Modal,
+	StatusBar,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+import DocumentPicker, {
+	isInProgress,
+	types,
+} from 'react-native-document-picker';
 import css from 'css-to-rn.macro';
 import debounce from 'lodash.debounce';
 import xs from 'xstream';
@@ -12,9 +24,13 @@ import Toolbar from 'components/Toolbar';
 import MessageList from 'components/MessageList';
 import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile, qiscus} from "../qiscus";
+import {
+	getFileExtension,
+	isImageFile,
+	isUnSupportFileType,
+	isVideoFile,
+} from '../qiscus';
 import * as ImagePicker from 'react-native-image-picker';
-import RNFetchBlob from "rn-fetch-blob";
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -25,7 +41,7 @@ export default class ChatScreen extends React.Component {
 		isTyping: false,
 		lastOnline: null,
 		typingUsername: null,
-		isModalVisible: false
+		isModalVisible: false,
 	};
 
 	componentDidMount() {
@@ -155,7 +171,7 @@ export default class ChatScreen extends React.Component {
 					<View>
 						<Text>Please select an option:</Text>
 						<Button title="File" onPress={this._onSelectFile} />
-						<Button title="Image" onPress={this._onSelectImage}/>
+						<Button title="Image" onPress={this._onSelectImage} />
 					</View>
 				</Modal>
 
@@ -209,10 +225,9 @@ export default class ChatScreen extends React.Component {
 	}, 300);
 
 	_onSelectModal = () => {
-		this.setState(
-			{
-				isModalVisible: true,
-			})
+		this.setState({
+			isModalVisible: true,
+		});
 	};
 	_onOnline = (data) => {
 		this.setState({
@@ -222,7 +237,7 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log(message)
+		console.log(message);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
@@ -323,16 +338,15 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_onSelectFile = () => {
-		this.setState(
-			{
-				isModalVisible: false,
-			});
+		this.setState({
+			isModalVisible: false,
+		});
 		DocumentPicker.pick({
 			allowMultiSelection: true,
 			type: [types.allFiles],
 		})
 			.then((resp) => {
-				resp.map((responses)=> {
+				resp.map((responses) => {
 					let fileName = responses.name;
 					if (!fileName) {
 						const _fileName = responses.uri.split('/').pop();
@@ -357,58 +371,61 @@ export default class ChatScreen extends React.Component {
 					if (!(sizeInMB <= 20)) {
 						return Promise.reject('File size over');
 					}
-					this._onSendingFileOrMedia(source)
-				})
+					this._onSendingFileOrMedia(source);
+				});
 			})
 			.catch(this._handleError);
 	};
 
 	_onSelectImage = () => {
-		this.setState(
-			{
-				isModalVisible: false,
-			});
+		this.setState({
+			isModalVisible: false,
+		});
 		ImagePicker.launchImageLibrary(
 			{
-				mediaType: "mixed",
+				mediaType: 'mixed',
 				includeBase64: false,
 				selectionLimit: 0,
-				includeExtra: true
+				includeExtra: true,
 			},
-			null,
+			null
 		).then((resp) => {
-			if (resp.didCancel) return console.log('user cancel');
-			if (resp.errorMessage)
+			if (resp.didCancel) {
+				return console.log('user cancel');
+			}
+			if (resp.errorMessage) {
 				return console.log('error when getting file', resp.errorMessage);
+			}
 			resp.assets.map((responses) => {
-					let fileName;
-					if (!fileName) {
-						const _fileName = responses.uri.split('/').pop();
-						const _fileType = responses.type
-							? responses.type.split('/').pop()
-							: 'jpeg';
-						fileName = `${_fileName}.${_fileType}`;
-					}
-					const source = {
-						uri: responses.uri,
-						name: fileName,
-						type: responses.type,
-						size: responses.fileSize,
-					};
-					let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-					console.log("ini image", source, sizeInMB, fileName)
-					if (isNaN(sizeInMB) || sizeInMB === 0) {
-						return Promise.reject('File size required or empty');
-					}
-					if (!(sizeInMB <= 2)) {
-						// Example limitation
-						return Promise.reject('File size cannot over from 2mb and cannot empty');
-					}
-					this._onSendingFileOrMedia(source)
+				let fileName;
+				if (!fileName) {
+					const _fileName = responses.uri.split('/').pop();
+					const _fileType = responses.type
+						? responses.type.split('/').pop()
+						: 'jpeg';
+					fileName = `${_fileName}.${_fileType}`;
 				}
-			)
+				const source = {
+					uri: responses.uri,
+					name: fileName,
+					type: responses.type,
+					size: responses.fileSize,
+				};
+				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
+				console.log('ini image', source, sizeInMB, fileName);
+				if (isNaN(sizeInMB) || sizeInMB === 0) {
+					return Promise.reject('File size required or empty');
+				}
+				if (!(sizeInMB <= 2)) {
+					// Example limitation
+					return Promise.reject(
+						'File size cannot over from 2mb and cannot empty'
+					);
+				}
+				this._onSendingFileOrMedia(source);
+			});
 		});
-	}
+	};
 
 	_addMessage = (message, scroll = false) =>
 		new Promise((resolve) => {
@@ -453,12 +470,12 @@ export default class ChatScreen extends React.Component {
 				}
 				if (fileURL != null) {
 					resolve({
-						url: fileURL
-					})
-				}else {
-					reject("Upload failed")
+						url: fileURL,
+					});
+				} else {
+					reject('Upload failed');
 				}
-			})
+			});
 		});
 
 	_loadMore = () => {
@@ -528,7 +545,10 @@ export default class ChatScreen extends React.Component {
 	}
 
 	_onSendingFileOrMedia(mediaOrDocs) {
-		const message = this._prepareFileMessage('File attachment '+getFileExtension(mediaOrDocs.name), mediaOrDocs.uri);
+		const message = this._prepareFileMessage(
+			'File attachment ' + getFileExtension(mediaOrDocs.name),
+			mediaOrDocs.uri
+		);
 		this._addMessage(message, true)
 			.then(() => {
 				const obj = {
@@ -536,24 +556,28 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return this._uploadMessage(obj)
+				return this._uploadMessage(obj);
 			})
-			.then(res =>{
+			.then((res) => {
 				if (res.url) {
 					const payload = JSON.stringify({
-						type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
+						type:
+							isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name)
+								? 'image'
+								: mediaOrDocs.type,
 						content: {
 							url: res.url,
 							file_name: mediaOrDocs.name,
 							caption: '',
 						},
 					});
-					Qiscus.qiscus?.sendComment(
+					Qiscus.qiscus
+						?.sendComment(
 							this.state.room.id,
 							message.message,
 							message.uniqueId,
 							'custom', // message type
-							payload,
+							payload
 						)
 						.then((resp) => {
 							this._updateMessage(message, resp);
@@ -564,7 +588,6 @@ export default class ChatScreen extends React.Component {
 				console.log('Catch me if you can', error);
 			});
 	}
-
 }
 
 const styles = StyleSheet.create(css`
