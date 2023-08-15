@@ -7,12 +7,12 @@ import xs from 'xstream';
 import * as dateFns from 'date-fns';
 import toast from 'utils/toast';
 
-import * as Qiscus from 'qiscus';
+import * as Qiscus from '../qiscus';
 import Toolbar from 'components/Toolbar';
 import MessageList from 'components/MessageList';
 import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
+import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile, qiscus} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
 import RNFetchBlob from "rn-fetch-blob";
 
@@ -307,7 +307,6 @@ export default class ChatScreen extends React.Component {
 			message.unique_temp_id
 		);
 		this._updateMessage(message, resp);
-		toast('Success sending message!');
 	};
 
 	_handleError = (err) => {
@@ -369,44 +368,48 @@ export default class ChatScreen extends React.Component {
 			{
 				isModalVisible: false,
 			});
-		const options = {
-			title: 'Select Image',
-			storageOptions: {
-				skipBackup: true,
-				path: 'images'
+		ImagePicker.launchImageLibrary(
+			{
+				mediaType: "mixed",
+				includeBase64: false,
+				selectionLimit: 0,
+				includeExtra: true
 			},
-		};
-		ImagePicker.showImagePicker(options,(resp) => {
-				console.log('masuk then', resp);
-				if (resp.didCancel) return console.log('user cancel');
-
-				let fileName;
-				if (!fileName) {
-					const _fileName = resp.uri.split('/').pop();
-					const _fileType = resp.type
-						? resp.type.split('/').pop()
-						: 'jpeg';
-					fileName = `${_fileName}.${_fileType}`;
+			null,
+		).then((resp) => {
+			if (resp.didCancel) return console.log('user cancel');
+			if (resp.errorMessage)
+				return console.log('error when getting file', resp.errorMessage);
+			resp.assets.map((responses) => {
+					let fileName;
+					if (!fileName) {
+						const _fileName = responses.uri.split('/').pop();
+						const _fileType = responses.type
+							? responses.type.split('/').pop()
+							: 'jpeg';
+						fileName = `${_fileName}.${_fileType}`;
+					}
+					const source = {
+						uri: responses.uri,
+						name: fileName,
+						type: responses.type,
+						size: responses.fileSize,
+					};
+					let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
+					console.log("ini image", source, sizeInMB, fileName)
+					if (isNaN(sizeInMB) || sizeInMB === 0) {
+						return Promise.reject('File size required or empty');
+					}
+					if (!(sizeInMB <= 2)) {
+						// Example limitation
+						return Promise.reject('File size cannot over from 2mb and cannot empty');
+					}
+					this._onSendingFileOrMedia(source)
 				}
-				const source = {
-					uri: resp.uri,
-					name: fileName,
-					type: resp.type,
-					size: resp.fileSize,
-				};
-				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-				console.log("ini image", source, sizeInMB, fileName)
-				if (isNaN(sizeInMB) || sizeInMB === 0) {
-					return Promise.reject('File size required or empty');
-				}
-				if (!(sizeInMB <= 2)) {
-					// Example limitation
-					return Promise.reject('File size cannot over from 2mb and cannot empty');
-				}
-				this._onSendingFileOrMedia(source)
-			}
-		)
+			)
+		});
 	}
+
 	_addMessage = (message, scroll = false) =>
 		new Promise((resolve) => {
 			this.setState(
@@ -439,19 +442,8 @@ export default class ChatScreen extends React.Component {
 			},
 		}));
 	};
-
-	_generateCurlCommand = (baseUrl, headers, payload) => {
-		const headersString = Object.keys(headers)
-			.map(key => `-H '${key}: ${headers[key]}'`)
-			.join(' ');
-		return `curl --location --request POST '${baseUrl}' ${headersString} \
---form 'file=@"${payload.filePath}"' \
---form 'name="${payload.name}"' \
---form 'type="${payload.type}"'`;
-	};
 	_uploadMessage = (file) =>
 		new Promise(async (resolve, reject) => {
-			/*
 			Qiscus.qiscus.upload(file, (error, progress, fileURL) => {
 				if (error) {
 					return console.log('error when uploading', error);
@@ -467,50 +459,6 @@ export default class ChatScreen extends React.Component {
 					reject("Upload failed")
 				}
 			})
-			 */
-			let tokenSdk = Qiscus.qiscus?.userData?.token;
-			let appId = Qiscus.qiscus?.AppId;
-			let userId = Qiscus.qiscus?.user_id;
-			let version = Qiscus.qiscus?.version;
-			const headerUpload = {
-				'qiscus_sdk_app_id': appId,
-				'qiscus_sdk_user_id': userId,
-				'qiscus_sdk_token': tokenSdk,
-				'qiscus_chat_version': version,
-				'Content-Type': 'multipart/form-data'
-			};
-			console.log("Please inform curl below!!");
-			console.log(this._generateCurlCommand(uploadAttachment(Qiscus.qiscus?.baseURL), headerUpload, {
-				name : file.name,
-				type : file.type,
-				filePath : file.uri
-			}));
-			try {
-				const response = await RNFetchBlob.fetch(
-					'POST',
-					`${uploadAttachment(Qiscus.qiscus?.baseURL)}`,
-					 headerUpload,
-					[
-						{
-							name: 'file',
-							filename: file.name,
-							type: file.type,
-							data: RNFetchBlob.wrap(file.uri),
-						},
-					]
-				);
-
-				let responseJson = await response.json();
-
-				if (responseJson.status === 200) {
-					console.log('Upload response:', responseJson);
-					resolve(responseJson.results.file)
-				}else {
-					reject(responseJson)
-				}
-			} catch (error) {
-				console.error('Upload error:', error);
-			}
 		});
 
 	_loadMore = () => {
