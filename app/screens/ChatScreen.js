@@ -28,6 +28,41 @@ export default class ChatScreen extends React.Component {
 		isModalVisible: false
 	};
 
+	_buttonPayload = () => {
+		return {
+				"text": "silahkan pilih produk qiscus yang sesuai anda butuhkan",
+				"buttons": [
+					{
+						"label": "Admin Ganteng",
+						"type": "postback",
+						"postback_text": "admin",
+						"payload": {
+							"url": "https://documentation.qiscus.com/",
+							"method": "get",
+							"payload": null
+						}
+					},
+					{
+						"label": "Chatbot",
+						"type": "postback",
+						"postback_text": "chatbot",
+						"payload": {
+							"url": "https://documentation.qiscus.com/",
+							"method": "get",
+							"payload": null
+						}
+					},
+					{
+						"label": "Bantuan",
+						"type": "link",
+						"payload": {
+							"url": "https://documentation.qiscus.com/"
+						}
+					},
+				]
+			}
+	}
+
 	componentDidMount() {
 		const roomId = this.props.navigation.getParam('roomId', null);
 		if (roomId == null) {
@@ -222,7 +257,7 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log(message)
+		console.log("hakii",message)
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
@@ -290,6 +325,21 @@ export default class ChatScreen extends React.Component {
 		};
 	};
 
+	_prepareCardMessage = (message) => {
+		const date = new Date();
+		return {
+			id: date.getTime(),
+			uniqueId: '' + date.getTime(),
+			unique_temp_id: '' + date.getTime(),
+			timestamp: date.getTime(),
+			type: 'buttons',
+			status: 'sending',
+			message: message,
+			email: Qiscus.currentUser().email,
+			payload: JSON.stringify(this._buttonPayload())
+		};
+	};
+
 	_prepareFileMessage = (message, fileURI) => {
 		return {
 			...this._prepareMessage(message),
@@ -299,14 +349,35 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_submitMessage = async (text) => {
-		const message = this._prepareMessage(text);
-		await this._addMessage(message, true);
-		const resp = await Qiscus.qiscus?.sendComment(
-			this.state.room.id,
-			text,
-			message.unique_temp_id
-		);
-		this._updateMessage(message, resp);
+		if (text === 'btn'){
+			const message1 = this._prepareMessage("this is post back button");
+			await this._addMessage(message1, true);
+			const resp1 = await Qiscus.qiscus?.sendComment(
+				this.state.room.id,
+				message1.message,
+				message1.unique_temp_id
+			);
+			this._updateMessage(message1, resp1);
+			const message2 = this._prepareCardMessage("example");
+			await this._addMessage(message2, true);
+			const resp2 = await Qiscus.qiscus?.sendComment(
+				this.state.room.id,
+				message2.message,
+				message2.unique_temp_id,
+				message2.type,
+				message2.payload
+			);
+			this._updateMessage(message2, resp2);
+		}else {
+			const message = this._prepareMessage(text);
+			await this._addMessage(message, true);
+			const resp = await Qiscus.qiscus?.sendComment(
+				this.state.room.id,
+				text,
+				message.unique_temp_id
+			);
+			// this._updateMessage(message, resp);
+		}
 	};
 
 	_handleError = (err) => {
