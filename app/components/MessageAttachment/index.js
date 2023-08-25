@@ -1,14 +1,16 @@
-import {Image, Text, TouchableOpacity, View} from 'react-native';
+import {Image, Text, TouchableOpacity, TouchableWithoutFeedback, View} from 'react-native';
 import React from 'react';
 import styles from "./style";
 import {isImageFile, isVideoFile} from "../../qiscus";
 
 const MessageAttachment = (props) => {
-    const {item, onDownload, hideDownloadButton} = props;
+    const {item, onDownload, hideDownloadButton, onLongClick} = props;
     const {url, file_name} = item.payload.content;
     if (isImageFile(url) || isVideoFile(url)) return null;
     return (
-        <>
+        <TouchableWithoutFeedback onLongPress={()=> {
+            if (onLongClick) onLongClick();
+        }}>
             <View style={[styles.content, (hideDownloadButton) && {
                 paddingLeft: 5,
                 paddingRight: 5,
@@ -29,7 +31,7 @@ const MessageAttachment = (props) => {
                     />
                 </TouchableOpacity>}
             </View>
-        </>
+        </TouchableWithoutFeedback>
     );
 };
 

@@ -1,13 +1,12 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import {View, Text, Image, TouchableWithoutFeedback} from "react-native";
 import {isVideoFile} from "../qiscus";
 import * as Qiscus from "../qiscus";
 
 export default class MessageCustom extends React.Component {
   render() {
-    const message = this.props.message;
+    const {onLongClick, message} = this.props;
     const imageURI = message.payload.content.url;
-    const filename = message.payload.file_name;
     const type = message.payload.type;
 
     return (
@@ -19,12 +18,15 @@ export default class MessageCustom extends React.Component {
           flexDirection: "column"
         }}
       >
-        <View
+        <TouchableWithoutFeedback
           style={{
             width: 200,
             height: 150,
             flex: 1,
             flexBasis: 150
+          }}
+          onLongPress={() => {
+              if (onLongClick) onLongClick();
           }}
         >
           {type === "image" && (
@@ -33,8 +35,7 @@ export default class MessageCustom extends React.Component {
               source={{ uri: isVideoFile(imageURI) ? Qiscus.qiscus.getThumbnailURL(imageURI) : imageURI }}
             />
           )}
-        </View>
-        {filename && <Text>{filename}</Text>}
+        </TouchableWithoutFeedback>
       </View>
     );
   }

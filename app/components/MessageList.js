@@ -6,17 +6,17 @@ import {
   Image,
   FlatList,
   Animated,
-  TouchableWithoutFeedback, Platform, PermissionsAndroid,
+  TouchableWithoutFeedback, Platform, PermissionsAndroid, TouchableOpacity,
 } from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
 import debounce from 'lodash.debounce';
 
 import * as dateFns from 'date-fns';
-import * as Qiscus from 'qiscus';
-import MessageUpload from 'components/MessageUpload';
-import MessageCustom from 'components/MessageCustom';
+import * as Qiscus from '../qiscus';
 import MessageAttachment from "./MessageAttachment";
 import toast from "../utils/toast";
+import MessageCustom from "./MessageCustom";
+import MessageUpload from "./MessageUpload";
 
 class AnimatedSending extends React.Component {
   animation = new Animated.Value(0);
@@ -101,7 +101,11 @@ export default class MessageList extends React.Component {
     const showMeta = isMe && !isDate && !isLoadMore;
     const showMetaOther = !isMe && !isDate && !isLoadMore;
 
-    let content = <Text style={textStyle}>{message.message}</Text>;
+    let content = <TouchableWithoutFeedback onLongPress={()=> {
+      if (this.props.onLongClickItem)this.props.onLongClickItem(message)
+    }}>
+      <Text style={textStyle}>{message.message}</Text>
+    </TouchableWithoutFeedback>;
 
     if (type === 'upload') content = this._renderUploadMessage(message);
     if (isCustomMessage && message.payload.type === 'image')
@@ -123,7 +127,7 @@ export default class MessageList extends React.Component {
           )}
           {!isLoadMore && <View style={textStyle}>{content}</View>}
         </View>
-        {showMetaOther && this._renderMessageMetaOther(message)}
+          {showMetaOther && this._renderMessageMetaOther(message)}
       </View>
     );
   };
@@ -194,9 +198,13 @@ export default class MessageList extends React.Component {
       }
     }
   };
-  _renderCustomMessageAttachment = (message) => <MessageAttachment item={message} onDownload={this._onDownload} hideDownloadButton={false}/>;
+  _renderCustomMessageAttachment = (message) => <MessageAttachment item={message} onDownload={this._onDownload} hideDownloadButton={false} onLongClick={()=> {
+    if (this.props.onLongClickItem)this.props.onLongClickItem(message)
+  }}/>;
 
-  _renderCustomImageMessage = (message) => <MessageCustom message={message} />;
+  _renderCustomImageMessage = (message) => <MessageCustom message={message} onLongClick={()=> {
+    if (this.props.onLongClickItem)this.props.onLongClickItem(message)
+  }}/>;
   _renderMessageMeta = (message) => {
     return (
       <View style={styles.metaContainer}>

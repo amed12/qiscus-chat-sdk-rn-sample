@@ -5,16 +5,15 @@ import css from 'css-to-rn.macro';
 import debounce from 'lodash.debounce';
 import xs from 'xstream';
 import * as dateFns from 'date-fns';
-import toast from 'utils/toast';
 
-import * as Qiscus from 'qiscus';
-import Toolbar from 'components/Toolbar';
-import MessageList from 'components/MessageList';
-import Form from 'components/Form';
-import Empty from 'components/EmptyChat';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile, uploadAttachment} from "../qiscus";
+import * as Qiscus from '../qiscus';
+import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
-import RNFetchBlob from "rn-fetch-blob";
+import Form from "../components/Form";
+import MessageList from "../components/MessageList";
+import toast from "../utils/toast";
+import Toolbar from "../components/Toolbar";
+import EmptyChat from "../components/EmptyChat";
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -25,7 +24,9 @@ export default class ChatScreen extends React.Component {
 		isTyping: false,
 		lastOnline: null,
 		typingUsername: null,
-		isModalVisible: false
+		isModalVisible: false,
+		isModalActionVisible: false,
+		selectedMessage: {}
 	};
 
 	componentDidMount() {
@@ -95,6 +96,7 @@ export default class ChatScreen extends React.Component {
 				keyboardVerticalOffset={StatusBar.currentHeight}
 				behavior="padding"
 				enabled>
+
 				<Toolbar
 					title={<Text style={styles.titleText}>{roomName}</Text>}
 					onPress={this._onToolbarClick}
@@ -141,15 +143,42 @@ export default class ChatScreen extends React.Component {
 					)}
 				/>
 
-				{messages.length === 0 && <Empty />}
+				{messages.length === 0 && <EmptyChat />}
 				{messages.length > 0 && (
 					<MessageList
 						isLoadMoreable={this.state.isLoadMoreable}
 						messages={messages}
 						scroll={this.state.scroll}
 						onLoadMore={this._loadMore}
+						onLongClickItem={ message => {
+							this._onSelectModalAction(true, message)
+						}}
 					/>
 				)}
+
+				<Modal visible={this.state.isModalActionVisible} animationType="slide" transparent>
+					<View style={stylesJs.centeredView}>
+						<View style={stylesJs.modalView}>
+							<TouchableOpacity onPress={()=>{
+								this._onSelectModalAction(false);
+							}} style={stylesJs.closeButton}>
+								<Text style={stylesJs.closeButtonText}>Close</Text>
+							</TouchableOpacity>
+							<TouchableOpacity style={stylesJs.item}>
+								<Text>Copy Message</Text>
+							</TouchableOpacity>
+							<TouchableOpacity style={stylesJs.item}>
+								<Text>Forward Message</Text>
+							</TouchableOpacity>
+							<TouchableOpacity style={stylesJs.item} onPress={()=>{
+								this._onDeleteMessageAction();
+							}}>
+								<Text>Delete Message</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Modal>
+
 
 				<Modal visible={this.state.isModalVisible} animationType="slide">
 					<View>
@@ -214,6 +243,24 @@ export default class ChatScreen extends React.Component {
 				isModalVisible: true,
 			})
 	};
+
+	_onSelectModalAction = (open,message) => {
+		this.setState(
+			{
+				isModalActionVisible: open,
+				selectedMessage: open === true ? message : {}
+			})
+	};
+
+	_onDeleteMessageAction = () => {
+		Qiscus.deleteMessage(this.state.selectedMessage).then(comment => {
+			this._onSelectModalAction(false)
+			this.componentDidMount()
+		}).catch(err => {
+			console.log("delete action error =>",err);
+		});
+		this._onSelectModalAction(false)
+	}
 	_onOnline = (data) => {
 		this.setState({
 			isOnline: data.isOnline,
@@ -347,16 +394,6 @@ export default class ChatScreen extends React.Component {
 						type: responses.type,
 						size: responses.size,
 					};
-					if (isUnSupportFileType(source?.name)) {
-						return Promise.reject('File not supported');
-					}
-					let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-					if (isNaN(sizeInMB)) {
-						return Promise.reject('File size required');
-					}
-					if (!(sizeInMB <= 20)) {
-						return Promise.reject('File size over');
-					}
 					this._onSendingFileOrMedia(source)
 				})
 			})
@@ -395,13 +432,6 @@ export default class ChatScreen extends React.Component {
 				};
 				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
 				console.log("ini image", source, sizeInMB, fileName)
-				if (isNaN(sizeInMB) || sizeInMB === 0) {
-					return Promise.reject('File size required or empty');
-				}
-				if (!(sizeInMB <= 2)) {
-					// Example limitation
-					return Promise.reject('File size cannot over from 2mb and cannot empty');
-				}
 				this._onSendingFileOrMedia(source)
 			}
 		)
@@ -439,18 +469,9 @@ export default class ChatScreen extends React.Component {
 		}));
 	};
 
-	_generateCurlCommand = (baseUrl, headers, payload) => {
-		const headersString = Object.keys(headers)
-			.map(key => `-H '${key}: ${headers[key]}'`)
-			.join(' ');
-		return `curl --location --request POST '${baseUrl}' ${headersString} \
---form 'file=@"${payload.filePath}"' \
---form 'name="${payload.name}"' \
---form 'type="${payload.type}"'`;
-	};
 	_uploadMessage = (file) =>
 		new Promise(async (resolve, reject) => {
-			/*
+
 			Qiscus.qiscus.upload(file, (error, progress, fileURL) => {
 				if (error) {
 					return console.log('error when uploading', error);
@@ -466,50 +487,50 @@ export default class ChatScreen extends React.Component {
 					reject("Upload failed")
 				}
 			})
-			 */
-			let tokenSdk = Qiscus.qiscus?.userData?.token;
-			let appId = Qiscus.qiscus?.AppId;
-			let userId = Qiscus.qiscus?.user_id;
-			let version = Qiscus.qiscus?.version;
-			const headerUpload = {
-				'qiscus_sdk_app_id': appId,
-				'qiscus_sdk_user_id': userId,
-				'qiscus_sdk_token': tokenSdk,
-				'qiscus_chat_version': version,
-				'Content-Type': 'multipart/form-data'
-			};
-			console.log("Please inform curl below!!");
-			console.log(this._generateCurlCommand(uploadAttachment(Qiscus.qiscus?.baseURL), headerUpload, {
-				name : file.name,
-				type : file.type,
-				filePath : file.uri
-			}));
-			try {
-				const response = await RNFetchBlob.fetch(
-					'POST',
-					`${uploadAttachment(Qiscus.qiscus?.baseURL)}`,
-					 headerUpload,
-					[
-						{
-							name: 'file',
-							filename: file.name,
-							type: file.type,
-							data: RNFetchBlob.wrap(file.uri),
-						},
-					]
-				);
 
-				let responseJson = await response.json();
-
-				if (responseJson.status === 200) {
-					console.log('Upload response:', responseJson);
-					resolve(responseJson.results.file)
-				}else {
-					reject(responseJson)
-				}
-			} catch (error) {
-				console.error('Upload error:', error);
-			}
+			// let tokenSdk = Qiscus.qiscus?.userData?.token;
+			// let appId = Qiscus.qiscus?.AppId;
+			// let userId = Qiscus.qiscus?.user_id;
+			// let version = Qiscus.qiscus?.version;
+			// const headerUpload = {
+			// 	'qiscus_sdk_app_id': appId,
+			// 	'qiscus_sdk_user_id': userId,
+			// 	'qiscus_sdk_token': tokenSdk,
+			// 	'qiscus_chat_version': version,
+			// 	'Content-Type': 'multipart/form-data'
+			// };
+			// console.log("Please inform curl below!!");
+			// console.log(this._generateCurlCommand(uploadAttachment(Qiscus.qiscus?.baseURL), headerUpload, {
+			// 	name : file.name,
+			// 	type : file.type,
+			// 	filePath : file.uri
+			// }));
+			// try {
+			// 	const response = await RNFetchBlob.fetch(
+			// 		'POST',
+			// 		`${uploadAttachment(Qiscus.qiscus?.baseURL)}`,
+			// 		 headerUpload,
+			// 		[
+			// 			{
+			// 				name: 'file',
+			// 				filename: file.name,
+			// 				type: file.type,
+			// 				data: RNFetchBlob.wrap(file.uri),
+			// 			},
+			// 		]
+			// 	);
+			//
+			// 	let responseJson = await response.json();
+			//
+			// 	if (responseJson.status === 200) {
+			// 		console.log('Upload response:', responseJson);
+			// 		resolve(responseJson.results.file)
+			// 	}else {
+			// 		reject(responseJson)
+			// 	}
+			// } catch (error) {
+			// 	console.error('Upload error:', error);
+			// }
 		});
 
 	_loadMore = () => {
@@ -617,6 +638,34 @@ export default class ChatScreen extends React.Component {
 	}
 
 }
+
+const stylesJs = StyleSheet.create({
+	centeredView: {
+		flex: 1,
+		justifyContent: 'center',
+		alignItems: 'center',
+		backgroundColor: 'rgba(0, 0, 0, 0.5)',
+	},
+	modalView: {
+		backgroundColor: 'white',
+		borderRadius: 10,
+		padding: 20,
+		width: '80%',
+		alignItems: 'center',
+		elevation: 5,
+	},
+	closeButton: {
+		alignSelf: 'flex-end',
+	},
+	closeButtonText: {
+		color: 'blue',
+	},
+	item: {
+		paddingVertical: 10,
+		borderBottomWidth: 1,
+		borderBottomColor: '#ccc',
+	},
+});
 
 const styles = StyleSheet.create(css`
 	.container {
