@@ -6,7 +6,7 @@ import debounce from 'lodash.debounce';
 import xs from 'xstream';
 import * as dateFns from 'date-fns';
 
-import * as Qiscus from '../qiscus';
+import * as Qiscus from '../qiscus/index';
 import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
 import Form from "../components/Form";
@@ -269,18 +269,19 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log(message)
+		console.log("_onNewMessage",message);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
 				[message.unique_temp_id]: message,
 			},
+			scroll: true
 		}));
 		return 'New message';
 	};
 
 	_onMessageRead = ({ comment }) => {
-		toast('message read');
+		console.log("_onMessageRead", comment);
 		// const date = new Date(comment.timestamp);
 		const results = this.messages
 			// .filter(it => new Date(it.timestamp) <= date)
@@ -302,6 +303,7 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_onMessageDelivered = ({ comment }) => {
+		console.log("_onMessageDelivered", comment);
 		toast('message delivered');
 
 		const results = this.messages
