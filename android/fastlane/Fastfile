@@ -1,0 +1,30 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  desc "Build and distribute the Android debug APK to Firebase"
+  lane :deploy_debug_to_firebase do
+    # Upload the APK to Firebase App Distribution
+    firebase_app_distribution(
+      groups: "public", # Optional: specify a distribution group
+      release_notes: "Add sample delete message via long click bubble chat see this commit ",
+      apk_path: "./app/build/outputs/apk/debug/app-debug.apk", # Path to your debug APK
+      app: "1:424215762628:android:ce48fbb510048c7c61db91", # Your Firebase App ID
+      firebase_cli_token: "1//0gePa8vgaR_XFCgYIARAAGBASNwF-L9IrB7KZfv4OHXXA1ZO6jnvGiTeC0ki0GvVoeLYK78rGcetlhcgpX7OIluh_R-Xs96vdmfU", # Your Firebase API Token
+    )
+  end
+end
