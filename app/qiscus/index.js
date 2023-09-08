@@ -155,3 +155,16 @@ export function setDeviceToken(token) {
 }
 
 export const uploadAttachment = (baseUrl) => `${baseUrl}/api/v2/sdk/upload`;
+export const deleteMessage = (message) => new Promise((resolve,reject) => {
+	qiscus.deleteComment(message.room_id, [""+message.unique_temp_id])
+		.then(function (comment) {
+			resolve(comment)
+		})
+		.catch(function (error) {
+			reject(error)
+		})
+});
+
+export const isNotEmptyJSONObject = (obj) => {
+	return Object.keys(obj).length !== 0;
+}

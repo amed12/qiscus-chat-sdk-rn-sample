@@ -253,12 +253,21 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_onDeleteMessageAction = () => {
-		Qiscus.deleteMessage(this.state.selectedMessage).then(comment => {
+		const selectedMessage = this.state.selectedMessage;
+		const isMe = selectedMessage.email === Qiscus.currentUser().email;
+		if (!Qiscus.isNotEmptyJSONObject(selectedMessage)) return
+		if (!isMe) {
+			this.setState({ selectedMessage: null });
 			this._onSelectModalAction(false)
-			this.componentDidMount()
+			toast("Cannot delete message other");
+			return
+		}
+		Qiscus.deleteMessage(this.state.selectedMessage).then(comment => {
+			this._onNewMessage(comment.results.comments[0])
 		}).catch(err => {
 			console.log("delete action error =>",err);
 		});
+		this.setState({ selectedMessage: null });
 		this._onSelectModalAction(false)
 	}
 	_onOnline = (data) => {
