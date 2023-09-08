@@ -3,6 +3,8 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "android:build:debug": "cd android && ./gradlew clean && ./gradlew assembleDebug",
+    "fix:androidx": "npx jetify",
     "dev:android": "run-p start android",
     "android": "react-native run-android",
     "ios": "react-native run-ios",
