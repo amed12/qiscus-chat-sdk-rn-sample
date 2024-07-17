@@ -58,9 +58,10 @@ export let SupportVideoType =
 
 export const isImageFile = (name) => {
 	return SupportImageType.includes(getFileExtension(name?.toLowerCase()));
-}
+};
 
-export const isVideoFile = (name) => SupportVideoType.includes(getFileExtension(name?.toLowerCase()))
+export const isVideoFile = (name) =>
+	SupportVideoType.includes(getFileExtension(name?.toLowerCase()));
 
 /*
 Just Example for limit type of attachment file, in Qiscus we support all type
@@ -77,7 +78,7 @@ export let SupportDocumentType = [
 	'odt',
 	'pdf',
 	'apk',
-	'txt'
+	'txt',
 ];
 
 /*
@@ -98,6 +99,7 @@ export function init() {
 			},
 			newMessagesCallback(messages) {
 				messages.forEach((message) => {
+					console.log('messagenya' + JSON.stringify(message));
 					event.emit('event', { kind: 'new-message', data: message });
 				});
 			},
@@ -155,16 +157,18 @@ export function setDeviceToken(token) {
 }
 
 export const uploadAttachment = (baseUrl) => `${baseUrl}/api/v2/sdk/upload`;
-export const deleteMessage = (message) => new Promise((resolve,reject) => {
-	qiscus.deleteComment(message.room_id, [""+message.unique_temp_id])
-		.then(function (comment) {
-			resolve(comment)
-		})
-		.catch(function (error) {
-			reject(error)
-		})
-});
+export const deleteMessage = (message) =>
+	new Promise((resolve, reject) => {
+		qiscus
+			.deleteComment(message.room_id, ['' + message.unique_temp_id])
+			.then(function (comment) {
+				resolve(comment);
+			})
+			.catch(function (error) {
+				reject(error);
+			});
+	});
 
 export const isNotEmptyJSONObject = (obj) => {
 	return Object.keys(obj).length !== 0;
-}
+};
