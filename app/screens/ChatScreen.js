@@ -1,19 +1,36 @@
 import React from 'react';
-import {Button, Image, Modal, StatusBar, StyleSheet, Text, TouchableOpacity, View,} from 'react-native';
-import DocumentPicker, {isInProgress, types,} from 'react-native-document-picker';
+import {
+	Button,
+	Image,
+	Modal,
+	StatusBar,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from 'react-native';
+import DocumentPicker, {
+	isInProgress,
+	types,
+} from 'react-native-document-picker';
 import css from 'css-to-rn.macro';
 import debounce from 'lodash.debounce';
 import xs from 'xstream';
 import * as dateFns from 'date-fns';
 
 import * as Qiscus from '../qiscus/index';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
+import {
+	getFileExtension,
+	isImageFile,
+	isUnSupportFileType,
+	isVideoFile,
+} from '../qiscus';
 import * as ImagePicker from 'react-native-image-picker';
-import Form from "../components/Form";
-import MessageList from "../components/MessageList";
-import toast from "../utils/toast";
-import Toolbar from "../components/Toolbar";
-import EmptyChat from "../components/EmptyChat";
+import Form from '../components/Form';
+import MessageList from '../components/MessageList';
+import toast from '../utils/toast';
+import Toolbar from '../components/Toolbar';
+import EmptyChat from '../components/EmptyChat';
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -26,7 +43,7 @@ export default class ChatScreen extends React.Component {
 		typingUsername: null,
 		isModalVisible: false,
 		isModalActionVisible: false,
-		selectedMessage: {}
+		selectedMessage: {},
 	};
 
 	componentDidMount() {
@@ -96,7 +113,6 @@ export default class ChatScreen extends React.Component {
 				keyboardVerticalOffset={StatusBar.currentHeight}
 				behavior="padding"
 				enabled>
-
 				<Toolbar
 					title={<Text style={styles.titleText}>{roomName}</Text>}
 					onPress={this._onToolbarClick}
@@ -150,18 +166,23 @@ export default class ChatScreen extends React.Component {
 						messages={messages}
 						scroll={this.state.scroll}
 						onLoadMore={this._loadMore}
-						onLongClickItem={ message => {
-							this._onSelectModalAction(true, message)
+						onLongClickItem={(message) => {
+							this._onSelectModalAction(true, message);
 						}}
 					/>
 				)}
 
-				<Modal visible={this.state.isModalActionVisible} animationType="slide" transparent>
+				<Modal
+					visible={this.state.isModalActionVisible}
+					animationType="slide"
+					transparent>
 					<View style={stylesJs.centeredView}>
 						<View style={stylesJs.modalView}>
-							<TouchableOpacity onPress={()=>{
-								this._onSelectModalAction(false);
-							}} style={stylesJs.closeButton}>
+							<TouchableOpacity
+								onPress={() => {
+									this._onSelectModalAction(false);
+								}}
+								style={stylesJs.closeButton}>
 								<Text style={stylesJs.closeButtonText}>Close</Text>
 							</TouchableOpacity>
 							<TouchableOpacity style={stylesJs.item}>
@@ -170,21 +191,22 @@ export default class ChatScreen extends React.Component {
 							<TouchableOpacity style={stylesJs.item}>
 								<Text>Forward Message</Text>
 							</TouchableOpacity>
-							<TouchableOpacity style={stylesJs.item} onPress={()=>{
-								this._onDeleteMessageAction();
-							}}>
+							<TouchableOpacity
+								style={stylesJs.item}
+								onPress={() => {
+									this._onDeleteMessageAction();
+								}}>
 								<Text>Delete Message</Text>
 							</TouchableOpacity>
 						</View>
 					</View>
 				</Modal>
 
-
 				<Modal visible={this.state.isModalVisible} animationType="slide">
 					<View>
 						<Text>Please select an option:</Text>
 						<Button title="File" onPress={this._onSelectFile} />
-						<Button title="Image" onPress={this._onSelectImage}/>
+						<Button title="Image" onPress={this._onSelectImage} />
 					</View>
 				</Modal>
 
@@ -238,38 +260,38 @@ export default class ChatScreen extends React.Component {
 	}, 300);
 
 	_onSelectModal = () => {
-		this.setState(
-			{
-				isModalVisible: true,
-			})
+		this.setState({
+			isModalVisible: true,
+		});
 	};
 
-	_onSelectModalAction = (open,message) => {
-		this.setState(
-			{
-				isModalActionVisible: open,
-				selectedMessage: open === true ? message : {}
-			})
+	_onSelectModalAction = (open, message) => {
+		this.setState({
+			isModalActionVisible: open,
+			selectedMessage: open === true ? message : {},
+		});
 	};
 
 	_onDeleteMessageAction = () => {
 		const selectedMessage = this.state.selectedMessage;
 		const isMe = selectedMessage.email === Qiscus.currentUser().email;
-		if (!Qiscus.isNotEmptyJSONObject(selectedMessage)) return
+		if (!Qiscus.isNotEmptyJSONObject(selectedMessage)) return;
 		if (!isMe) {
 			this.setState({ selectedMessage: null });
-			this._onSelectModalAction(false)
-			toast("Cannot delete message other");
-			return
+			this._onSelectModalAction(false);
+			toast('Cannot delete message other');
+			return;
 		}
-		Qiscus.deleteMessage(this.state.selectedMessage).then(comment => {
-			this._onNewMessage(comment.results.comments[0])
-		}).catch(err => {
-			console.log("delete action error =>",err);
-		});
+		Qiscus.deleteMessage(this.state.selectedMessage)
+			.then((comment) => {
+				this._onNewMessage(comment.results.comments[0]);
+			})
+			.catch((err) => {
+				console.log('delete action error =>', err);
+			});
 		this.setState({ selectedMessage: null });
-		this._onSelectModalAction(false)
-	}
+		this._onSelectModalAction(false);
+	};
 	_onOnline = (data) => {
 		this.setState({
 			isOnline: data.isOnline,
@@ -278,19 +300,19 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log("_onNewMessage",message);
+		console.log('_onNewMessage', message);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
 				[message.unique_temp_id]: message,
 			},
-			scroll: true
+			scroll: true,
 		}));
 		return 'New message';
 	};
 
 	_onMessageRead = ({ comment }) => {
-		console.log("_onMessageRead", comment);
+		console.log('_onMessageRead', comment);
 		// const date = new Date(comment.timestamp);
 		const results = this.messages
 			// .filter(it => new Date(it.timestamp) <= date)
@@ -312,7 +334,7 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_onMessageDelivered = ({ comment }) => {
-		console.log("_onMessageDelivered", comment);
+		console.log('_onMessageDelivered', comment);
 		toast('message delivered');
 
 		const results = this.messages
@@ -381,16 +403,15 @@ export default class ChatScreen extends React.Component {
 	};
 
 	_onSelectFile = () => {
-		this.setState(
-			{
-				isModalVisible: false,
-			});
+		this.setState({
+			isModalVisible: false,
+		});
 		DocumentPicker.pick({
 			allowMultiSelection: true,
 			type: [types.allFiles],
 		})
 			.then((resp) => {
-				resp.map((responses)=> {
+				resp.map((responses) => {
 					let fileName = responses.name;
 					if (!fileName) {
 						const _fileName = responses.uri.split('/').pop();
@@ -405,48 +426,44 @@ export default class ChatScreen extends React.Component {
 						type: responses.type,
 						size: responses.size,
 					};
-					this._onSendingFileOrMedia(source)
-				})
+					this._onSendingFileOrMedia(source);
+				});
 			})
 			.catch(this._handleError);
 	};
 
 	_onSelectImage = () => {
-		this.setState(
-			{
-				isModalVisible: false,
-			});
+		this.setState({
+			isModalVisible: false,
+		});
 		const options = {
 			title: 'Select Image',
 			storageOptions: {
 				skipBackup: true,
-				path: 'images'
+				path: 'images',
 			},
 		};
-		ImagePicker.showImagePicker(options,(resp) => {
-				console.log('masuk then', resp);
-				if (resp.didCancel) return console.log('user cancel');
+		ImagePicker.showImagePicker(options, (resp) => {
+			console.log('masuk then', resp);
+			if (resp.didCancel) return console.log('user cancel');
 
-				let fileName;
-				if (!fileName) {
-					const _fileName = resp.uri.split('/').pop();
-					const _fileType = resp.type
-						? resp.type.split('/').pop()
-						: 'jpeg';
-					fileName = `${_fileName}.${_fileType}`;
-				}
-				const source = {
-					uri: resp.uri,
-					name: fileName,
-					type: resp.type,
-					size: resp.fileSize,
-				};
-				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-				console.log("ini image", source, sizeInMB, fileName)
-				this._onSendingFileOrMedia(source)
+			let fileName;
+			if (!fileName) {
+				const _fileName = resp.uri.split('/').pop();
+				const _fileType = resp.type ? resp.type.split('/').pop() : 'jpeg';
+				fileName = `${_fileName}.${_fileType}`;
 			}
-		)
-	}
+			const source = {
+				uri: resp.uri,
+				name: fileName,
+				type: resp.type,
+				size: resp.fileSize,
+			};
+			let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
+			console.log('ini image', source, sizeInMB, fileName);
+			this._onSendingFileOrMedia(source);
+		});
+	};
 	_addMessage = (message, scroll = false) =>
 		new Promise((resolve) => {
 			this.setState(
@@ -482,7 +499,6 @@ export default class ChatScreen extends React.Component {
 
 	_uploadMessage = (file) =>
 		new Promise(async (resolve, reject) => {
-
 			Qiscus.qiscus.upload(file, (error, progress, fileURL) => {
 				if (error) {
 					return console.log('error when uploading', error);
@@ -492,12 +508,12 @@ export default class ChatScreen extends React.Component {
 				}
 				if (fileURL != null) {
 					resolve({
-						url: fileURL
-					})
-				}else {
-					reject("Upload failed")
+						url: fileURL,
+					});
+				} else {
+					reject('Upload failed');
 				}
-			})
+			});
 
 			// let tokenSdk = Qiscus.qiscus?.userData?.token;
 			// let appId = Qiscus.qiscus?.AppId;
@@ -611,7 +627,10 @@ export default class ChatScreen extends React.Component {
 	}
 
 	_onSendingFileOrMedia(mediaOrDocs) {
-		const message = this._prepareFileMessage('File attachment '+getFileExtension(mediaOrDocs.name), mediaOrDocs.uri);
+		const message = this._prepareFileMessage(
+			'File attachment ' + getFileExtension(mediaOrDocs.name),
+			mediaOrDocs.uri
+		);
 		this._addMessage(message, true)
 			.then(() => {
 				const obj = {
@@ -619,24 +638,28 @@ export default class ChatScreen extends React.Component {
 					type: mediaOrDocs.type,
 					name: mediaOrDocs.name,
 				};
-				return this._uploadMessage(obj)
+				return this._uploadMessage(obj);
 			})
-			.then(res =>{
+			.then((res) => {
 				if (res.url) {
 					const payload = JSON.stringify({
-						type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
+						type:
+							isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name)
+								? 'image'
+								: mediaOrDocs.type,
 						content: {
 							url: res.url,
 							file_name: mediaOrDocs.name,
 							caption: '',
 						},
 					});
-					Qiscus.qiscus?.sendComment(
+					Qiscus.qiscus
+						?.sendComment(
 							this.state.room.id,
 							message.message,
 							message.uniqueId,
 							'custom', // message type
-							payload,
+							payload
 						)
 						.then((resp) => {
 							this._updateMessage(message, resp);
@@ -647,7 +670,6 @@ export default class ChatScreen extends React.Component {
 				console.log('Catch me if you can', error);
 			});
 	}
-
 }
 
 const stylesJs = StyleSheet.create({
