@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
 	View,
 	StyleSheet,
@@ -7,101 +7,140 @@ import {
 	FlatList,
 } from 'react-native';
 import xs from 'xstream';
+import { withNavigationFocus } from 'react-navigation';
 
 import * as Qiscus from 'qiscus';
 
 import RoomItem from 'components/RoomItem';
 import Toolbar from 'components/Toolbar';
 
-const RoomListScreen = ({ navigation }) => {
-	const [rooms, setRooms] = useState([]);
-	const [avatarURI, setAvatarURI] = useState(null);
+class RoomListScreen extends React.Component {
+	state = {
+		rooms: [],
+		avatarURI: null,
+	};
 
-	useEffect(() => {
-		setAvatarURI(Qiscus.currentUser().avatar_url);
+	componentDidMount() {
+		this.setState({
+			avatarURI: Qiscus.currentUser().avatar_url,
+		});
+		this.loadInitialData();
+	}
 
-		const loginSubscription = Qiscus.isLogin$()
+	componentDidUpdate(prevProps) {
+		// IMPORTANT: To refresh room list count after exit app/go another app
+		if (prevProps.isFocused !== this.props.isFocused && this.props.isFocused) {
+			this._loadRoomList();
+		}
+	}
+
+	componentWillUnmount() {
+		if (this.subscription) {
+			this.subscription.unsubscribe();
+		}
+		if (this.subscription2) {
+			this.subscription2.unsubscribe();
+		}
+	}
+
+	loadInitialData = () => {
+		const subscription = Qiscus.isLogin$()
 			.filter((isLogin) => isLogin === true)
 			.take(1)
 			.map(() => xs.from(Qiscus.qiscus.loadRoomList()))
 			.flatten()
 			.subscribe({
-				next: (loadedRooms) => {
-					setRooms(loadedRooms);
+				next: (rooms) => {
+					this.setState({ rooms });
+					subscription.unsubscribe();
 				},
 			});
-
-		const messageSubscription = Qiscus.newMessage$().subscribe({
+		this.subscription = Qiscus.newMessage$().subscribe({
 			next: (message) => {
-				handleNewMessage(message);
+				this._onNewMessage$(message);
 			},
 		});
+	};
 
-		// Cleanup subscriptions on component unmount
-		return () => {
-			loginSubscription.unsubscribe();
-			messageSubscription.unsubscribe();
-		};
-	}, []);
-
-	const handleNewMessage = (message) => {
+	_onNewMessage$ = (message) => {
 		const roomId = message.room_id;
-		const room = rooms.find((r) => r.id === roomId);
+		const room = this.state.rooms.find((r) => r.id === roomId);
 		if (room == null) {
-			Qiscus.qiscus.loadRoomList().then((updatedRooms) => {
-				setRooms(updatedRooms);
-			});
+			this._loadRoomList();
 			return;
 		}
 		room.count_notif = (Number(room.count_notif) || 0) + 1;
 		room.last_comment_message = message.message;
 
-		const updatedRooms = rooms.filter((r) => r.id !== roomId);
-		setRooms([room, ...updatedRooms]);
+		const rooms = this.state.rooms.filter((r) => r.id !== roomId);
+		this.setState({
+			rooms: [room, ...rooms],
+		});
 		return `Success updating room ${room.id}`;
 	};
 
-	const openProfile = () => {
-		navigation.push('Profile');
+	_loadRoomList = () => {
+		Qiscus.qiscus.loadRoomList().then((updatedRooms) => {
+			this.setState({ rooms: updatedRooms });
+		});
 	};
 
-	const onClickRoom = (roomId) => {
-		navigation.push('Chat', {
+	_openProfile = () => {
+		this.props.navigation.push('Profile');
+	};
+
+	_onClickRoom = (roomId) => {
+		this.props.navigation.push('Chat', {
 			roomId,
 		});
 	};
 
-	const openUserList = () => {
-		navigation.push('UserList');
+	_openUserList = () => {
+		this.props.navigation.push('UserList');
 	};
 
-	const avatarURL = avatarURI != null ? avatarURI : 'https://via.placeholder.com/120x120';
-
-	return (
-		<View style={styles.container}>
-			<Toolbar
-				title="Conversation"
-				renderLeftButton={() => (
-					<TouchableOpacity style={styles.btnAvatar} onPress={openProfile}>
-						<Image style={styles.avatar} source={{ uri: avatarURL }} />
-					</TouchableOpacity>
-				)}
-				renderRightButton={() => (
-					<TouchableOpacity style={styles.btnAvatar} onPress={openUserList}>
-						<Image style={styles.iconStartChat} source={require('assets/ic_new_chat.png')} />
-					</TouchableOpacity>
-				)}
-			/>
-			<FlatList
-				data={rooms}
-				keyExtractor={(it) => `key-${it.id}`}
-				renderItem={({ item }) => (
-					<RoomItem room={item} onClick={(roomId) => onClickRoom(roomId)} />
-				)}
-			/>
-		</View>
-	);
-};
+	render() {
+		const avatarURL =
+			this.state.avatarURI != null
+				? this.state.avatarURI
+				: 'https://via.placeholder.com/120x120';
+		const { rooms } = this.state;
+		return (
+			<View style={styles.container}>
+				<Toolbar
+					title="Conversation"
+					renderLeftButton={() => (
+						<TouchableOpacity
+							style={styles.btnAvatar}
+							onPress={this._openProfile}>
+							<Image style={styles.avatar} source={{ uri: avatarURL }} />
+						</TouchableOpacity>
+					)}
+					renderRightButton={() => (
+						<TouchableOpacity
+							style={styles.btnAvatar}
+							onPress={this._openUserList}>
+							<Image
+								style={styles.iconStartChat}
+								source={require('assets/ic_new_chat.png')}
+							/>
+						</TouchableOpacity>
+					)}
+				/>
+				<FlatList
+					data={rooms}
+					keyExtractor={(it) => `key-${it.id}`}
+					renderItem={({ item }) => (
+						<RoomItem
+							room={item}
+							onClick={(roomId) => this._onClickRoom(roomId)}
+						/>
+					)}
+				/>
+			</View>
+		);
+	}
+}
 
 const styles = StyleSheet.create({
 	container: {
@@ -130,4 +169,4 @@ const styles = StyleSheet.create({
 	},
 });
 
-export default RoomListScreen;
+export default withNavigationFocus(RoomListScreen);
