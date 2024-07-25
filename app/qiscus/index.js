@@ -33,7 +33,7 @@ function distinct(stream) {
 }
 
 export const qiscus = new QiscusSDK();
-const appId = 'sdksample';
+const appId = 'qchatsdk--wild8hg4ciy';
 
 const event = mitt();
 export const event$ = xs.create({
@@ -99,7 +99,6 @@ export function init() {
 			},
 			newMessagesCallback(messages) {
 				messages.forEach((message) => {
-					console.log('messagenya' + JSON.stringify(message));
 					event.emit('event', { kind: 'new-message', data: message });
 				});
 			},
