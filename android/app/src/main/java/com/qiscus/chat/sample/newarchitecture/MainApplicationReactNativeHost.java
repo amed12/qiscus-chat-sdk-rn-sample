@@ -1,4 +1,4 @@
-package com.reactnativesampleqiscus.newarchitecture;
+package com.qiscus.chat.sample.newarchitecture;
 
 import android.app.Application;
 import androidx.annotation.NonNull;
@@ -19,9 +19,9 @@ import com.facebook.react.fabric.CoreComponentsRegistry;
 import com.facebook.react.fabric.FabricJSIModuleProvider;
 import com.facebook.react.fabric.ReactNativeConfig;
 import com.facebook.react.uimanager.ViewManagerRegistry;
-import com.reactnativesampleqiscus.BuildConfig;
-import com.reactnativesampleqiscus.newarchitecture.components.MainComponentsRegistry;
-import com.reactnativesampleqiscus.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
+import com.qiscus.chat.sample.BuildConfig;
+import com.qiscus.chat.sample.newarchitecture.components.MainComponentsRegistry;
+import com.qiscus.chat.sample.newarchitecture.modules.MainApplicationTurboModuleManagerDelegate;
 import java.util.ArrayList;
 import java.util.List;
 

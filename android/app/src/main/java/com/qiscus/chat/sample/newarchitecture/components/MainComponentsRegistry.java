@@ -1,4 +1,4 @@
-package com.reactnativesampleqiscus.newarchitecture.components;
+package com.qiscus.chat.sample.newarchitecture.components;
 
 import com.facebook.jni.HybridData;
 import com.facebook.proguard.annotations.DoNotStrip;
