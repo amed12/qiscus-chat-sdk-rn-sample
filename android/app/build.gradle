@@ -133,7 +133,7 @@ android {
     buildToolsVersion "33.0.0"
 
     defaultConfig {
-        applicationId "com.qiscuschatsdkrnsample"
+        applicationId "com.qiscus.chat.sample"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 1
