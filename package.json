@@ -32,7 +32,7 @@
     "react-native-push-notification": "^7.3.1",
     "react-native-reanimated": "^2.14.4",
     "react-native-safe-area-context": "^3.2.0",
-    "react-native-screens": "^3.3.0",
+    "react-native-screens": "3.18.2",
     "react-navigation": "^4.4.4",
     "react-navigation-stack": "^2.10.4",
     "reactive.macro": "0.0.7",
