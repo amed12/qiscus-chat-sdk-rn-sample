@@ -20,7 +20,9 @@
     "fresh": "npm run clean:all && npm install && cd ios && pod install && cd .. && npm run play-finish-sound",
     "reset": "npx react-native start --reset-cache",
     "start:ios": "npx react-native run-ios",
-    "start:android": "npx react-native run-android"
+    "start:android": "npx react-native run-android",
+    "build:apk:release": "cd android && ./gradlew assembleRelease && cd ..",
+    "build:apk:debug": "cd android && ./gradlew assembleDebug && cd .. && npm run play-finish-sound"
   },
   "dependencies": {
     "@notifee/react-native": "^9.0.0",

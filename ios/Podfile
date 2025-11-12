@@ -1,38 +1,62 @@
-# Resolve react_native_pods.rb with node to allow for hoisting
+# Resolve react_native_pods.rb even when hoisted
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+# React Native 0.79 requires iOS 15.1 minimum for Hermes
+platform :ios, '15.1'
+
 prepare_react_native_project!
 
-# Fix for Firebase Swift pods
-use_modular_headers!
+# ❌ Remove global modular headers (it breaks Hermes & some pods)
+# use_modular_headers!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+# Prefer static frameworks to avoid duplicate symbols & Swift conflicts
+use_frameworks! :linkage => :static
+
+# Required for React Native Firebase v15+ (firebase-ios-sdk v9+)
+$RNFirebaseAsStaticFramework = true
 
 target 'QiscusChatSDKRN' do
   config = use_native_modules!
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
+    # 🔧 Turn Hermes on (or set to false if you've disabled it everywhere else)
+    :hermes_enabled => true,
+    # Absolute path to your app root (as you had)
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # --- Optional: Flipper (comment out entirely if you don't need it) ---
+  # use_flipper!({ 'Flipper' => '0.201.0' })
+
   post_install do |installer|
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
+    # Standard RN post install
     react_native_post_install(
       installer,
       config[:reactNativePath],
-      :mac_catalyst_enabled => false,
-      # :ccache_enabled => true
+      :mac_catalyst_enabled => false
     )
+
+    # 🔒 Keep Pods consistent for Xcode 15/RN/Hermes
+    installer.pods_project.targets.each do |t|
+      t.build_configurations.each do |bc|
+        # Align deployment targets across all pods
+        bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+
+        # Bitcode is deprecated; make sure it's off (prevents stray warnings)
+        bc.build_settings['ENABLE_BITCODE'] = 'NO'
+
+        # If you MUST allow non-modular includes for a specific target, leave it here.
+        # Avoid setting it globally unless you really need it.
+        # Example:
+        # if t.name == 'hermes-engine' || t.name == 'React-Core'
+        #   bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        # end
+      end
+    end
   end
 end
