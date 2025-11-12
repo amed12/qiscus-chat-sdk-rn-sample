@@ -5,6 +5,10 @@ import App from './App';
 import {name as appName} from './app.json';
 import {qiscus} from './app/qiscus';
 
+if (__DEV__) {
+  require("./ReactotronConfig");
+}
+
 // Register background handler for Firebase messaging
 messaging().setBackgroundMessageHandler(async remoteMessage => {
   console.log('Message handled in the background!', remoteMessage);

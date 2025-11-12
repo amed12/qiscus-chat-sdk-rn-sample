@@ -9,7 +9,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAsyncStorage} from '@react-native-async-storage/async-storage';
 import * as Qiscus from 'qiscus';
 import {registerDeviceToken} from '../../index';
@@ -51,9 +53,11 @@ export function LoginPage(props) {
   }, [isLogin, props.navigation]);
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled">
-      <View style={{height: '100%', width: '100%'}}>
-        <KeyboardAvoidingView enabled>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView 
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}>
+        <KeyboardAvoidingView enabled behavior="padding">
           <ImageBackground
             source={require('assets/bg-pattern.png')}
             style={styles.background}>
@@ -88,8 +92,8 @@ export function LoginPage(props) {
             </View>
           </ImageBackground>
         </KeyboardAvoidingView>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -136,9 +140,11 @@ export default class LoginScreen extends React.Component {
 
   render() {
     return (
-      <ScrollView keyboardShouldPersistTaps="handled">
-        <View style={{height: '100%', width: '100%'}}>
-          <KeyboardAvoidingView enabled>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView 
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContent}>
+          <KeyboardAvoidingView enabled behavior="padding">
             <ImageBackground
               source={require('assets/bg-pattern.png')}
               style={styles.background}>
@@ -176,15 +182,22 @@ export default class LoginScreen extends React.Component {
               </View>
             </ImageBackground>
           </KeyboardAvoidingView>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  scrollContent: {
+    minHeight: Dimensions.get('window').height,
+  },
   background: {
-    height: '100%',
+    minHeight: Dimensions.get('window').height,
     width: '100%',
   },
   container: {
