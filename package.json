@@ -19,7 +19,7 @@
     "clean:all": "npm run clean:android && npm run clean:ios && npm run clean:cache && npm run clean",
     "fresh": "npm run clean:all && npm install && cd ios && pod install && cd .. && npm run play-finish-sound",
     "reset": "npx react-native start --reset-cache",
-    "start:ios": "npx react-native run-ios",
+    "start:ios": "npx react-native run-ios --simulator 'iPhone 16'",
     "start:android": "npx react-native run-android",
     "build:apk:release": "cd android && ./gradlew assembleRelease && cd ..",
     "build:apk:debug": "cd android && ./gradlew assembleDebug && cd .. && npm run play-finish-sound"
@@ -32,6 +32,7 @@
     "@react-native-firebase/messaging": "^21.3.0",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/native-stack": "^6.11.0",
+    "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "eventemitter3": "^5.0.1",
     "lodash": "^4.17.21",
