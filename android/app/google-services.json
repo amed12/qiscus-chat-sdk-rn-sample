@@ -1,80 +1,34 @@
 {
   "project_info": {
-    "project_number": "171341190722",
-    "firebase_url": "https://sample-app-ebd6a.firebaseio.com",
-    "project_id": "sample-app-ebd6a",
-    "storage_bucket": "sample-app-ebd6a.appspot.com"
+    "project_number": "424215762628",
+    "project_id": "qiscus-rn-sample",
+    "storage_bucket": "qiscus-rn-sample.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:171341190722:android:079fe73604ecc130",
-        "android_client_info": {
-          "package_name": "com.qiscus.chat.ngobrel"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBLnqFncAb-WyqxfxFTc92SckvOHx_3ukk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "171341190722-7je95rfviatulpi50nlr8sulifc2ob4t.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.qiscus.sdk",
-                "app_store_id": "1268906826"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:171341190722:android:aac109c8d7da1dc8",
+        "mobilesdk_app_id": "1:424215762628:android:ce48fbb510048c7c61db91",
         "android_client_info": {
           "package_name": "com.qiscus.chat.sample"
         }
       },
       "oauth_client": [
         {
-          "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+          "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBLnqFncAb-WyqxfxFTc92SckvOHx_3ukk"
+          "current_key": "AIzaSyAbCt6X92K_vppWDOEDXTswigIv-9955fg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+              "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "171341190722-7je95rfviatulpi50nlr8sulifc2ob4t.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.qiscus.sdk",
-                "app_store_id": "1268906826"
-              }
             }
           ]
         }
@@ -82,44 +36,86 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:171341190722:android:0bfbea0f67b329a4",
+        "mobilesdk_app_id": "1:424215762628:android:2a6b59e16e3a62a461db91",
+        "android_client_info": {
+          "package_name": "com.qiscus.dragonfly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbCt6X92K_vppWDOEDXTswigIv-9955fg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424215762628:android:add59c43cbb7ab3661db91",
+        "android_client_info": {
+          "package_name": "com.qiscus.multichannel.sample.widget"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAbCt6X92K_vppWDOEDXTswigIv-9955fg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424215762628:android:862b529e2155311f61db91",
         "android_client_info": {
           "package_name": "com.qiscus.mychatui"
         }
       },
       "oauth_client": [
         {
-          "client_id": "171341190722-d4hequgmdtn4egsdr0obmncobv5e9d40.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.qiscus.mychatui",
-            "certificate_hash": "a2d22a60fea103e6b730d2f77d35b57242f192fb"
-          }
-        },
-        {
-          "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+          "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBLnqFncAb-WyqxfxFTc92SckvOHx_3ukk"
+          "current_key": "AIzaSyAbCt6X92K_vppWDOEDXTswigIv-9955fg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+              "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "171341190722-7je95rfviatulpi50nlr8sulifc2ob4t.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.qiscus.sdk",
-                "app_store_id": "1268906826"
-              }
             }
           ]
         }
@@ -127,73 +123,28 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:171341190722:android:88d99e0fb189c356",
+        "mobilesdk_app_id": "1:424215762628:android:5d51a5e4f706764d61db91",
         "android_client_info": {
-          "package_name": "com.qiscus.qismo.agent"
+          "package_name": "com.qiscuschatsdkrn"
         }
       },
       "oauth_client": [
         {
-          "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+          "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyBLnqFncAb-WyqxfxFTc92SckvOHx_3ukk"
+          "current_key": "AIzaSyAbCt6X92K_vppWDOEDXTswigIv-9955fg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
+              "client_id": "424215762628-04an342e6jhvcfonr8s44534vquskt25.apps.googleusercontent.com",
               "client_type": 3
-            },
-            {
-              "client_id": "171341190722-7je95rfviatulpi50nlr8sulifc2ob4t.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.qiscus.sdk",
-                "app_store_id": "1268906826"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:171341190722:android:d4724fba4f2930b4",
-        "android_client_info": {
-          "package_name": "com.qiscus.qismo.chat"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBLnqFncAb-WyqxfxFTc92SckvOHx_3ukk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "171341190722-6ma5nkfrff181uk1l9dlnt1gif1p0n0v.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "171341190722-7je95rfviatulpi50nlr8sulifc2ob4t.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.qiscus.sdk",
-                "app_store_id": "1268906826"
-              }
             }
           ]
         }
