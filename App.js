@@ -1,17 +1,13 @@
-// GLOBAL.XMLHttpRequest = GLOBAL.originalXMLHttpRequest || GLOBAL.XMLHttpRequest;
 import React, {useEffect} from 'react';
-import {StyleSheet, StatusBar, Platform, View, SafeAreaView} from 'react-native';
-import {createAppContainer} from 'react-navigation';
-import {createStackNavigator} from 'react-navigation-stack';
-import AsyncStorage, {
-  useAsyncStorage,
-} from '@react-native-async-storage/async-storage';
+import {Platform} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {useAsyncStorage} from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
+import notifee, {AndroidImportance} from '@notifee/react-native';
 
 import * as Qiscus from 'qiscus';
-// import * as Firebase from 'utils/firebase';
-import firebase from '@react-native-firebase/app'
-import messaging from '@react-native-firebase/messaging'
-import PushNotification from 'react-native-push-notification'
 import {LoginPage as LoginScreen} from 'screens/LoginScreen';
 import ProfileScreen from 'screens/ProfileScreen';
 import RoomListScreen from 'screens/RoomListScreen';
@@ -19,30 +15,20 @@ import ChatScreen from 'screens/ChatScreen';
 import UserListScreen from 'screens/UserListScreen';
 import CreateGroupScreen from 'screens/CreateGroupScreen';
 import RoomInfoScreen from 'screens/RoomInfo';
-import flattenConcurrently from 'xstream/extra/flattenConcurrently';
 
-const AppNavigator = createStackNavigator(
-  {
-    Login: LoginScreen,
-    Profile: ProfileScreen,
-    RoomList: RoomListScreen,
-    Chat: ChatScreen,
-    UserList: UserListScreen,
-    CreateGroup: CreateGroupScreen,
-    RoomInfo: RoomInfoScreen,
-  },
-  {headerMode: 'none', initialRouteName: 'Login'},
-);
-const AppContainer = createAppContainer(AppNavigator);
+const Stack = createNativeStackNavigator();
 
-export default function Application(props) {
+export default function Application() {
   const storage = useAsyncStorage('qiscus');
+
   useEffect(() => {
+    // Initialize Qiscus SDK
     Qiscus.init();
+    
+    // Restore user session
     storage.getItem().then(
       (res) => {
         if (res == null) return;
-
         const data = JSON.parse(res);
         Qiscus.qiscus.setUserWithIdentityToken({user: data});
       },
@@ -50,56 +36,98 @@ export default function Application(props) {
         console.log('error getting login data', error);
       },
     );
-  }, []);
+  }, [storage]);
 
   useEffect(() => {
-    if (!messaging().hasPermission()) {
-      messaging().requestPermission()
-    }
+    // Setup push notifications
+    const setupNotifications = async () => {
+      try {
+        // Request permission
+        const authStatus = await messaging().requestPermission();
+        const enabled =
+          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-    // firebase.initializeApp()
-    PushNotification.channelExists('general', (exists) => {
-      if (!exists) {
-        PushNotification.createChannel({
-          channelId: 'general',
-          channelName: 'General'
-        }, (created) => {
-          console.log('channel created', created)
-        })
+        if (!enabled) {
+          console.log('Push notification permission denied');
+          return;
+        }
+
+        // Create notification channel for Android
+        if (Platform.OS === 'android') {
+          await notifee.createChannel({
+            id: 'general',
+            name: 'General Notifications',
+            importance: AndroidImportance.HIGH,
+          });
+        }
+
+        // Handle foreground messages
+        const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+          console.log('FCM Message received:', remoteMessage);
+          
+          try {
+            const payload = remoteMessage.data?.payload 
+              ? JSON.parse(remoteMessage.data.payload) 
+              : null;
+
+            // Display notification using Notifee
+            await notifee.displayNotification({
+              title: remoteMessage.notification?.title || 'New Message',
+              body: payload?.message || remoteMessage.notification?.body || '',
+              android: {
+                channelId: 'general',
+                importance: AndroidImportance.HIGH,
+                pressAction: {
+                  id: 'default',
+                },
+              },
+              ios: {
+                foregroundPresentationOptions: {
+                  alert: true,
+                  badge: true,
+                  sound: true,
+                },
+              },
+            });
+          } catch (error) {
+            console.error('Error displaying notification:', error);
+          }
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error setting up notifications:', error);
       }
-    });
+    };
 
-    messaging().onMessage(async (message) => {
-      console.log('@fcm.message', message)
-      let payload = JSON.parse(message.data.payload)
-      console.log('payload:', payload)
-      PushNotification.localNotification({
-        message: payload.message,
-        allowWhileIdle: true,
-        channelId: 'general',
-        title: 'New message',
-      })
-    })
-  }, [])
+    const unsubscribe = setupNotifications();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   return (
-    <>
-      {/* {Platform.OS === 'ios' && <View style={{height: 20}} />} */}
-      <SafeAreaView style={styles.safeAreaView}>
-        <AppContainer
-          style={styles.container}
-          ref={(ref) => (this.navigation = ref && ref._navigation)}
-        />
-      </SafeAreaView>
-    </>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+          initialRouteName="Login">
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Profile" component={ProfileScreen} />
+          <Stack.Screen name="RoomList" component={RoomListScreen} />
+          <Stack.Screen name="Chat" component={ChatScreen} />
+          <Stack.Screen name="UserList" component={UserListScreen} />
+          <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
+          <Stack.Screen name="RoomInfo" component={RoomInfoScreen} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginTop: StatusBar.currentHeight,
-  },
-  safeAreaView: {
-    flex: 1,
-  },
-});

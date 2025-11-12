@@ -1,78 +1,59 @@
-// GLOBAL.XMLHttpRequest = GLOBAL.originalXMLHttpRequest || GLOBAL.XMLHttpRequest;
-import {AppRegistry} from 'react-native';
-import PushNotificationIOS from "@react-native-community/push-notification-ios";
-import PushNotification from "react-native-push-notification";
+import {AppRegistry, Platform} from 'react-native';
+import messaging from '@react-native-firebase/messaging';
+import notifee, {EventType} from '@notifee/react-native';
 import App from './App';
 import {name as appName} from './app.json';
-import {qiscus, login$} from './app/qiscus';
-import xs from 'xstream'
-import p from './app/utils/p';
-import flattenConcurrently from 'xstream/extra/flattenConcurrently';
+import {qiscus} from './app/qiscus';
 
+// Register background handler for Firebase messaging
+messaging().setBackgroundMessageHandler(async remoteMessage => {
+  console.log('Message handled in the background!', remoteMessage);
+  
+  try {
+    const payload = remoteMessage.data?.payload 
+      ? JSON.parse(remoteMessage.data.payload) 
+      : null;
 
-
-// Must be outside of any component LifeCycle (such as `componentDidMount`).
-PushNotification.configure({
-  // (optional) Called when Token is generated (iOS and Android)
-  onRegister: async (token) => {
-    console.log("TOKEN:", token);
-    login$()
-      .map(() => xs.fromPromise(qiscus.registerDeviceToken(token.token)))
-      .compose(flattenConcurrently)
-      .addListener({
-        async next(data) {
-          console.log('sukses register device token', data)
+    // Display notification in background
+    await notifee.displayNotification({
+      title: remoteMessage.notification?.title || 'New Message',
+      body: payload?.message || remoteMessage.notification?.body || '',
+      android: {
+        channelId: 'general',
+        pressAction: {
+          id: 'default',
         },
-        error(err) {
-          console.log('got error while registering device token', err)
-          console.log(JSON.stringify(err))
-        },
-      })
-  },
-
-  // (required) Called when a remote is received or opened, or local notification is opened
-  onNotification: function (notification) {
-    console.log("NOTIFICATION:", notification);
-
-    // process the notification
-
-    // (required) Called when a remote is received or opened, or local notification is opened
-    notification.finish(PushNotificationIOS.FetchResult.NoData);
-  },
-
-  // (optional) Called when Registered Action is pressed and invokeApp is false, if true onNotification will be called (Android)
-  onAction: function (notification) {
-    console.log("ACTION:", notification.action);
-    console.log("NOTIFICATION:", notification);
-
-    // process the action
-  },
-
-  // (optional) Called when the user fails to register for remote notifications. Typically occurs when APNS is having issues, or the device is a simulator. (iOS)
-  onRegistrationError: function(err) {
-    console.error(err.message, err);
-  },
-
-  // IOS ONLY (optional): default: all - Permissions to register.
-  permissions: {
-    alert: true,
-    badge: true,
-    sound: true,
-  },
-
-  // Should the initial notification be popped automatically
-  // default: true
-  popInitialNotification: true,
-
-  /**
-   * (optional) default: true
-   * - Specified if permissions (ios) and token (android and ios) will requested or not,
-   * - if not, you must call PushNotificationsHandler.requestPermissions() later
-   * - if you are not using remote notification or do not have Firebase installed, use this:
-   *     requestPermissions: Platform.OS === 'ios'
-   */
-  requestPermissions: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error handling background message:', error);
+  }
 });
 
+// Handle notification events (when user taps on notification)
+notifee.onBackgroundEvent(async ({type, detail}) => {
+  console.log('Background notification event:', type, detail);
+  
+  if (type === EventType.PRESS) {
+    // Handle notification press - navigate to appropriate screen
+    console.log('User pressed notification:', detail.notification);
+  }
+});
 
+// Register FCM token with Qiscus when user logs in
+// This should be called after successful login
+export const registerDeviceToken = async () => {
+  try {
+    const token = await messaging().getToken();
+    console.log('FCM Token:', token);
+    
+    if (qiscus.isLogin) {
+      await qiscus.registerDeviceToken(token);
+      console.log('Device token registered with Qiscus');
+    }
+  } catch (error) {
+    console.error('Error registering device token:', error);
+  }
+};
+// Register the app
 AppRegistry.registerComponent(appName, () => App);
