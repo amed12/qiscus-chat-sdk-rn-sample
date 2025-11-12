@@ -8,7 +8,7 @@ import {
   Animated,
   TouchableWithoutFeedback, Platform, PermissionsAndroid,
 } from 'react-native';
-import RNFetchBlob from 'rn-fetch-blob';
+import ReactNativeBlobUtil from 'react-native-blob-util';
 import debounce from 'lodash.debounce';
 
 import * as dateFns from 'date-fns';
@@ -159,8 +159,8 @@ export default class MessageList extends React.Component {
 
   _downloadFile = (url, fileName) => {
     toast('Start downloading.');
-    const {dirs} = RNFetchBlob.fs;
-    RNFetchBlob.config({
+    const {dirs} = ReactNativeBlobUtil.fs;
+    ReactNativeBlobUtil.config({
       fileCache: false,
       path: dirs.DocumentDir + '/' + fileName,
       addAndroidDownloads: {

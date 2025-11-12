@@ -6,8 +6,6 @@ import {
   Text,
   StyleSheet,
 } from 'react-native';
-import css from 'css-to-rn.macro';
-
 export default class SelectedContactItem extends React.PureComponent {
   render() {
     const {contact} = this.props;
@@ -29,55 +27,62 @@ export default class SelectedContactItem extends React.PureComponent {
   }
 }
 
-const styles = StyleSheet.create(css`
-  .container {
-    display: flex;
-    height: 80px;
-    width: 50px;
-    overflow: hidden;
-    align-items: center;
-    justify-content: flex-start;
-    flex-direction: column;
-    margin: 0 5px;
-    padding-top: 5px;
-    flex-shrink: 0;
-  }
-  .avatarContainer {
-    width: 40px;
-    height: 40px;
-    position: relative;
-    border-radius: 50px;
-    flex-basis: 40px;
-  }
-  .avatar {
-    height: 40px;
-    width: 40px;
-    resizeMode: cover;
-    border-radius: 50px;
-    overflow: hidden;
-  }
-  .remove {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background-color: transparent;
-    border: none;
-    height: 20px;
-    width: 20px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .name {
-    font-size: 13px;
-    color: #333;
-    flex: 0;
-    flex-basis: 40px;
-    height: 40px;
-    overflow: hidden;
-    width: 44px;
-    text-align: center;
-    padding: 0;
-  }
-`);
+const styles = StyleSheet.create({
+  container: {
+    display: 'flex',
+    height: 80,
+    width: 50,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'column',
+    margin: 0,
+    marginLeft: 5,
+    marginRight: 5,
+    paddingTop: 5,
+    flexShrink: 0,
+  },
+  avatarContainer: {
+    width: 40,
+    height: 40,
+    position: 'relative',
+    borderRadius: 50,
+    flexBasis: 40,
+  },
+  avatar: {
+    height: 40,
+    width: 40,
+    resizeMode: 'cover',
+    borderRadius: 50,
+    overflow: 'hidden',
+  },
+  remove: {
+    position: 'absolute',
+    top: -5,
+    right: -5,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    height: 20,
+    width: 20,
+    padding: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  icon: {
+    height: 20,
+    width: 20,
+    resizeMode: 'contain',
+  },
+  name: {
+    fontSize: 13,
+    color: '#333',
+    flex: 0,
+    flexBasis: 40,
+    height: 40,
+    overflow: 'hidden',
+    width: 44,
+    textAlign: 'center',
+    padding: 0,
+  },
+});

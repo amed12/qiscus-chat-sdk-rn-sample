@@ -9,9 +9,7 @@ import {
   View,
   TouchableWithoutFeedback
 } from "react-native";
-import css from "css-to-rn.macro";
-import xs from "xstream";
-import debounce from "lodash.debounce";
+import debounce from "lodash/debounce";
 
 import * as Qiscus from "qiscus";
 import Toolbar from "components/Toolbar";
@@ -25,23 +23,20 @@ export default class ContactChooser extends React.Component {
     selected: []
   };
 
-  componentDidMount() {
-    Qiscus.isLogin$()
-      .take(1)
-      .map(() => xs.from(this.loadContacts()))
-      .flatten()
-      .map(users => users.map(user => ({ ...user, selected: false })))
-      .subscribe({
-        next: users => {
-          const contacts = users.reduce((res, it) => {
-            res[it.id] = it;
-            return res;
-          }, {});
-          this.setState({
-            contacts
-          });
-        }
-      });
+  async componentDidMount() {
+    if (Qiscus.qiscus.isLogin) {
+      try {
+        const users = await this.loadContacts();
+        const usersWithSelection = users.map(user => ({ ...user, selected: false }));
+        const contacts = usersWithSelection.reduce((res, it) => {
+          res[it.id] = it;
+          return res;
+        }, {});
+        this.setState({ contacts });
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+      }
+    }
   }
 
   render() {
@@ -194,77 +189,77 @@ export default class ContactChooser extends React.Component {
   }
 }
 
-const styles = StyleSheet.create(css`
-  .container {
-    display: flex;
-    height: 100%;
-  }
-  .toolbarBtn {
-    height: 30px;
-    width: 30px;
-    overflow: hidden;
-    background-color: transparent;
-    flex: 0;
-    flex-shrink: 0;
-    flex-basis: 30px;
-    border-radius: 50px;
-  }
-  .icon {
-    height: 30px;
-    width: 30px;
-    resize-mode: contain;
-  }
-  .inputSearch {
-    color: #979797;
-  }
-  .searchContainer {
-    display: flex;
-    flex-direction: row;
-    flex-basis: 45px;
-    background-color: white;
-    border-bottom-width: 1px;
-    border-bottom-color: #e8e8e8;
-    justify-content: center;
-    align-items: center;
-  }
-  .separator {
-    flex: 0;
-    flex-direction: column;
-    flex-basis: 45px;
-    height: 45px;
-    padding-left: 10px;
-    background-color: #fafafa;
-    justify-content: flex-end;
-    display: flex;
-  }
-  .separatorText {
-    color: #666;
-    font-weight: 600;
-    font-size: 10px;
-    text-transform: uppercase;
-  }
-  .selectedContacts {
-    flex: 0;
-    flex-shrink: 0;
-    flex-basis: 70px;
-    margin-top: 10px;
-  }
-  .contactList {
-    flex: 1;
-    flex-basis: auto;
-    display: flex;
-  }
-  .contactFlatList {
-    flex: 1;
-    flex-basis: auto;
-    height: 100%;
-  }
-  .selected {
-    height: 25px;
-    width: 25px;
-    border-radius: 50px;
-    overflow: hidden;
-    resize-mode: contain;
-    margin-right: 10px;
-  }
-`);
+const styles = StyleSheet.create({
+  container: {
+    display: 'flex',
+    height: '100%',
+  },
+  toolbarBtn: {
+    height: 30,
+    width: 30,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    flex: 0,
+    flexShrink: 0,
+    flexBasis: 30,
+    borderRadius: 50,
+  },
+  icon: {
+    height: 30,
+    width: 30,
+    resizeMode: 'contain',
+  },
+  inputSearch: {
+    color: '#979797',
+  },
+  searchContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexBasis: 45,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e8e8e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  separator: {
+    flex: 0,
+    flexDirection: 'column',
+    flexBasis: 45,
+    height: 45,
+    paddingLeft: 10,
+    backgroundColor: '#fafafa',
+    justifyContent: 'flex-end',
+    display: 'flex',
+  },
+  separatorText: {
+    color: '#666',
+    fontWeight: '600',
+    fontSize: 10,
+    textTransform: 'uppercase',
+  },
+  selectedContacts: {
+    flex: 0,
+    flexShrink: 0,
+    flexBasis: 70,
+    marginTop: 10,
+  },
+  contactList: {
+    flex: 1,
+    flexBasis: 'auto',
+    display: 'flex',
+  },
+  contactFlatList: {
+    flex: 1,
+    flexBasis: 'auto',
+    height: '100%',
+  },
+  selected: {
+    height: 25,
+    width: 25,
+    borderRadius: 50,
+    overflow: 'hidden',
+    resizeMode: 'contain',
+    marginRight: 10,
+  },
+});

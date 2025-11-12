@@ -9,9 +9,7 @@ import {
   TouchableWithoutFeedback,
   View
 } from "react-native";
-import { state } from "reactive.macro";
-import css from "css-to-rn.macro";
-import ImagePicker from "react-native-image-picker";
+import * as ImagePicker from "react-native-image-picker";
 
 import * as Qiscus from "qiscus";
 import toast from "utils/toast";
@@ -40,8 +38,8 @@ function _Toolbar(props) {
 }
 
 export default function _GroupInfo(props) {
-  const name = state(null);
-  const avatarUrl = state("https://via.placeholder.com/200x200");
+  const [name, setName] = React.useState(null);
+  const [avatarUrl, setAvatarUrl] = React.useState("https://via.placeholder.com/200x200");
   const createGroup = useCallback(() => {
     const userIds = props.contacts.map(it => it.email);
     Qiscus.qiscus
@@ -55,30 +53,35 @@ export default function _GroupInfo(props) {
         console.log("error", error);
       });
   }, [name, props.contacts]);
-  const onSelectImage = useCallback(() => {
-    ImagePicker.showImagePicker(
-      {
-        title: "Select image",
-        storageOptions: {
-          skipBackup: true,
-          path: "images"
-        }
-      },
-      resp => {
-        if (resp.didCancel || resp.error)
-          return console.log("canceled", resp.error);
+  const onSelectImage = useCallback(async () => {
+    try {
+      const result = await ImagePicker.launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+      });
 
-        toast("Uploading image...");
-        const opts = { uri: resp.uri, name: resp.fileName, type: resp.type };
-        Qiscus.qiscus.upload(opts, (error, progress, fileUrl) => {
-          if (error != null) return console.log("error while upload", error);
-          if (fileUrl != null) {
-            avatarUrl = fileUrl;
-          }
-        });
+      if (result.didCancel || !result.assets || result.assets.length === 0) {
+        return;
       }
-    );
-  });
+
+      const asset = result.assets[0];
+      toast("Uploading image...");
+      const opts = {
+        uri: asset.uri,
+        name: asset.fileName || 'group-avatar.jpg',
+        type: asset.type || 'image/jpeg',
+      };
+      
+      Qiscus.qiscus.upload(opts, (error, progress, fileUrl) => {
+        if (error != null) return console.log("error while upload", error);
+        if (fileUrl != null) {
+          setAvatarUrl(fileUrl);
+        }
+      });
+    } catch (error) {
+      console.error('Error picking image:', error);
+    }
+  }, []);
   const onBack = useCallback(() => {
     props.navigation.goBack();
   });
@@ -106,7 +109,7 @@ export default function _GroupInfo(props) {
           <TextInput
             style={styles.groupNameInput}
             placeholder="Group name"
-            onChangeText={text => (name = text)}
+            onChangeText={text => setName(text)}
           />
         </View>
       </View>
@@ -257,93 +260,106 @@ export class GroupInfo extends React.Component {
   };
 }
 
-const styles = StyleSheet.create(css`
-  .groupInfoContainer {
-    flex: 0 0 100px;
-    display: flex;
-    flex-direction: row;
-  }
-  .avatarContainer {
-    flex: 0 0 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  }
-  .avatarPreview {
-    height: 64px;
-    width: 64px;
-    border-radius: 50px;
-    position: absolute;
-  }
-  .avatarPickerBtn {
-    position: absolute;
-    height: 64px;
-    width: 64px;
-    border-radius: 50px;
-    /* background-color: rgba(0,0,0,0.3); */
-    background-color: #333;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .groupNameContainer {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    flex: 1;
-    margin-right: 15px;
-  }
-  .groupNameLabel {
-    font-weight: 600;
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #979797;
-  }
-  .groupNameInput {
-    padding: 10px 5px;
-    border-bottom-width: 1px;
-    border-bottom-color: #666;
-  }
-
-  .container {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  .participantListContainer {
-    flex: 1;
-    display: flex;
-    background: white;
-    overflow: hidden;
-  }
-  .participantsHeader {
-    flex: 0;
-    flex-basis: 45px;
-    flex-direction: row;
-    height: 45px;
-    background: #fafafa;
-    align-items: flex-end;
-    display: flex;
-    padding: 10px;
-  }
-  .participantsHeaderText {
-    font-weight: 600;
-    font-size: 10px;
-    text-transform: uppercase;
-    color: #666;
-  }
-  .participantList {
-    padding: 10px;
-  }
-  .removeBtn {
-    flex: 0;
-    flex-basis: 30px;
-    width: 30px;
-    height: 30px;
-    padding: 10px;
-    background-color: #333;
-  }
-`);
+const styles = StyleSheet.create({
+  groupInfoContainer: {
+    flex: 0,
+    flexBasis: 100,
+    display: 'flex',
+    flexDirection: 'row',
+  },
+  avatarContainer: {
+    flex: 0,
+    flexBasis: 100,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  avatarPreview: {
+    height: 64,
+    width: 64,
+    borderRadius: 50,
+    position: 'absolute',
+  },
+  avatarPickerBtn: {
+    position: 'absolute',
+    height: 64,
+    width: 64,
+    borderRadius: 50,
+    backgroundColor: '#333',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  groupNameContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    flex: 1,
+    marginRight: 15,
+  },
+  groupNameLabel: {
+    fontWeight: '600',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    color: '#979797',
+  },
+  groupNameInput: {
+    padding: 10,
+    paddingLeft: 5,
+    paddingRight: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#666',
+  },
+  container: {
+    position: 'absolute',
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  participantListContainer: {
+    flex: 1,
+    display: 'flex',
+    backgroundColor: 'white',
+    overflow: 'hidden',
+  },
+  participantsHeader: {
+    flex: 0,
+    flexBasis: 45,
+    flexDirection: 'row',
+    height: 45,
+    backgroundColor: '#fafafa',
+    alignItems: 'flex-end',
+    display: 'flex',
+    padding: 10,
+  },
+  participantsHeaderText: {
+    fontWeight: '600',
+    fontSize: 10,
+    textTransform: 'uppercase',
+    color: '#666',
+  },
+  participantList: {
+    padding: 10,
+  },
+  removeBtn: {
+    flex: 0,
+    flexBasis: 30,
+    width: 30,
+    height: 30,
+    padding: 10,
+    backgroundColor: '#333',
+  },
+  toolbarBtn: {
+    height: 30,
+    width: 30,
+  },
+  icon: {
+    height: 30,
+    width: 30,
+    resizeMode: 'contain',
+  },
+  iconAvatarPicker: {},
+  selected: {},
+});

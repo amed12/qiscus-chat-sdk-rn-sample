@@ -4,8 +4,6 @@ import {
   Text,
   StyleSheet,
 } from 'react-native';
-import css from 'css-to-rn.macro';
-
 export default class LoadMore extends React.Component {
   render() {
     return (
@@ -17,13 +15,13 @@ export default class LoadMore extends React.Component {
   }
 }
 
-const styles = StyleSheet.create(css`
-  .container {
-    background-color: green;
-    height: 30px;
-    border-radius: 5px;
-  }
-  .text {
-    color: white;
-  }
-`);
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'green',
+    height: 30,
+    borderRadius: 5,
+  },
+  text: {
+    color: 'white',
+  },
+});
