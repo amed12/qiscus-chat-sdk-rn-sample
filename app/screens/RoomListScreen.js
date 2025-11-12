@@ -6,12 +6,10 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import xs from 'xstream';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import * as Qiscus from 'qiscus';
-import * as Firebase from 'utils/firebase';
-import p from 'utils/p';
+import {qiscusEvents} from 'qiscus';
 
 import RoomItem from 'components/RoomItem';
 import Toolbar from 'components/Toolbar';
@@ -23,30 +21,34 @@ export default class RoomListScreen extends React.Component {
   };
 
   componentDidMount() {
-    this.setState({
-      avatarURI: Qiscus.currentUser().avatar_url,
-    });
-    const subscription = Qiscus.isLogin$()
-      .filter((isLogin) => isLogin === true)
-      .take(1)
-      .map(() => xs.from(Qiscus.qiscus.loadRoomList()))
-      .flatten()
-      .subscribe({
-        next: (rooms) => {
-          this.setState({rooms});
-          subscription.unsubscribe();
-        },
-      });
-    this.subscription = Qiscus.newMessage$().subscribe({
-      next: (message) => {
-        this._onNewMessage$(message);
-      },
+    this.loadRooms();
+    
+    // Listen for new messages from Qiscus callbacks
+    this.newMessageListener = qiscusEvents.on('new-messages', (messages) => {
+      messages.forEach((message) => this._onNewMessage$(message));
     });
   }
+  
+  loadRooms = async () => {
+    try {
+      const currentUser = Qiscus.currentUser();
+      if (currentUser) {
+        this.setState({
+          avatarURI: currentUser.avatar_url,
+        });
+      }
+      
+      if (Qiscus.qiscus.isLogin) {
+        const rooms = await Qiscus.qiscus.loadRoomList();
+        this.setState({rooms});
+      }
+    } catch (error) {
+      console.error('Error loading rooms:', error);
+    }
+  };
 
   componentWillUnmount() {
-    if (this.subscription) this.subscription.unsubscribe();
-    if (this.subscription2) this.subscription2.unsubscribe();
+    if (this.newMessageListener) qiscusEvents.off('new-messages', this.newMessageListener);
   }
 
   _onNewMessage$ = (message) => {

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ImagePicker from 'react-native-image-picker';
+import * as ImagePicker from 'react-native-image-picker';
 import * as Qiscus from 'qiscus';
 import toast from 'utils/toast';
 
@@ -55,48 +55,56 @@ export default class ProfileScreen extends React.Component {
     this.setState((s) => ({name: text}));
   };
 
-  _getGallery = () => {
-    ImagePicker.showImagePicker(
-      {
-        title: 'Select image',
-        storageOptions: {
-          skipBackup: true,
-          path: 'images',
-        },
-      },
-      (resp) => {
-        if (resp.didCancel || resp.error) return;
-        const opts = {uri: resp.uri, name: resp.fileName, type: resp.type};
-        Qiscus.qiscus.upload(opts, (error, progress, fileURL) => {
-          if (error)
-            return console.log('error when uploading profile photo', error);
-          if (progress) return;
-          if (fileURL != null) {
-            this.setState({
-              avatarURI: fileURL,
-            });
-            Qiscus.qiscus.userData.avatar_url = fileURL;
-            Qiscus.qiscus
-              .updateProfile({avatar_url: fileURL})
-              .then(() => {
-                toast('Success updating avatar');
-              })
-              .catch(() => {});
+  _getGallery = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibrary({
+        mediaType: 'photo',
+        quality: 0.8,
+      });
+
+      if (result.didCancel || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      const opts = {
+        uri: asset.uri,
+        name: asset.fileName || 'avatar.jpg',
+        type: asset.type || 'image/jpeg',
+      };
+
+      Qiscus.qiscus.upload(opts, async (error, progress, fileURL) => {
+        if (error) {
+          console.log('error when uploading profile photo', error);
+          return;
+        }
+        if (progress) return;
+        if (fileURL != null) {
+          this.setState({
+            avatarURI: fileURL,
+          });
+          Qiscus.qiscus.userData.avatar_url = fileURL;
+          try {
+            await Qiscus.qiscus.updateProfile({avatar_url: fileURL});
+            toast('Success updating avatar');
+          } catch (err) {
+            console.error('Error updating profile:', err);
           }
-        });
-      },
-    );
+        }
+      });
+    } catch (error) {
+      console.error('Error picking image:', error);
+    }
   };
 
-  _onLogout = () => {
-    AsyncStorage.removeItem('qiscus')
-      .then(() => {
-        this.props.navigation.replace('Login');
-        Qiscus.qiscus.disconnect();
-      })
-      .catch((error) => {
-        console.log('error when trying to logout', error);
-      });
+  _onLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('qiscus');
+      this.props.navigation.replace('Login');
+      Qiscus.qiscus.disconnect();
+    } catch (error) {
+      console.log('error when trying to logout', error);
+    }
   };
 
   render() {

@@ -11,14 +11,13 @@ import {
 import DocumentPicker, {
 	isInProgress,
 	types,
-} from 'react-native-document-picker';
-import css from 'css-to-rn.macro';
-import debounce from 'lodash.debounce';
-import xs from 'xstream';
+} from '@react-native-documents/picker';
+import debounce from 'lodash/debounce';
 import * as dateFns from 'date-fns';
 import toast from 'utils/toast';
 
 import * as Qiscus from 'qiscus';
+import {qiscusEvents} from 'qiscus';
 import Toolbar from 'components/Toolbar';
 import MessageList from 'components/MessageList';
 import Form from 'components/Form';
@@ -39,56 +38,84 @@ export default class ChatScreen extends React.Component {
 	};
 
 	componentDidMount() {
-		const roomId = this.props.navigation.getParam('roomId', null);
+		const roomId = this.props.route.params?.roomId ?? null;
 		if (roomId == null) {
 			return this.props.navigation.replace('RoomList');
 		}
-		const subscription1 = Qiscus.isLogin$()
-			.take(1)
-			.map(() => xs.from(Qiscus.qiscus.getRoomById(roomId)))
-			.flatten()
-			.subscribe({
-				next: (room) => this.setState({ room }),
+		
+		// Load room and messages
+		this.loadRoomData(roomId);
+		
+		// Setup event listeners
+		this.setupEventListeners();
+	}
+	
+	loadRoomData = async (roomId) => {
+		try {
+			if (!Qiscus.qiscus.isLogin) {
+				console.log('User not logged in');
+				return;
+			}
+			
+			// Load room
+			const room = await Qiscus.qiscus.getRoomById(roomId);
+			this.setState({ room });
+			
+			// Load messages
+			const messages = await Qiscus.qiscus.loadComments(roomId);
+			const message = messages[0] || {};
+			const isLoadMoreable = message.comment_before_id !== 0;
+			const formattedMessages = messages.reduce((result, message) => {
+				result[message.unique_temp_id] = message;
+				return result;
+			}, {});
+			this.setState({
+				messages: formattedMessages,
+				isLoadMoreable,
 			});
-		const subscription2 = Qiscus.isLogin$()
-			.take(1)
-			.map(() => xs.from(Qiscus.qiscus.loadComments(roomId)))
-			.flatten()
-			.subscribe({
-				next: (messages) => {
-					const message = messages[0] || {};
-					const isLoadMoreable = message.comment_before_id !== 0;
-					const formattedMessages = messages.reduce((result, message) => {
-						result[message.unique_temp_id] = message;
-						return result;
-					}, {});
-					this.setState({
-						messages: formattedMessages,
-						isLoadMoreable,
-					});
-				},
-			});
-
-		this.subscription = xs
-			.merge(
-				Qiscus.newMessage$().map(this._onNewMessage),
-				Qiscus.messageRead$().map(this._onMessageRead),
-				Qiscus.messageDelivered$().map(this._onMessageDelivered),
-				Qiscus.onlinePresence$().map(this._onOnline),
-				Qiscus.typing$()
-					.filter((it) => Number(it.room_id) === this.state.room.id)
-					.map(this._onTyping)
-			)
-			.subscribe({
-				next: () => {},
-				error: (error) => console.log('subscription error', error),
-			});
+		} catch (error) {
+			console.error('Error loading room data:', error);
+		}
+	};
+	
+	setupEventListeners = () => {
+		// Listen for new messages from Qiscus callbacks
+		this.newMessageListener = qiscusEvents.on('new-messages', (messages) => {
+			messages.forEach((message) => this._onNewMessage(message));
+		});
+		
+		// Listen for message read
+		this.readListener = qiscusEvents.on('comment-read', (data) => {
+			this._onMessageRead(data);
+		});
+		
+		// Listen for message delivered
+		this.deliveredListener = qiscusEvents.on('comment-delivered', (data) => {
+			this._onMessageDelivered(data);
+		});
+		
+		// Listen for online presence
+		this.presenceListener = qiscusEvents.on('presence', (data) => {
+			this._onOnline(data);
+		});
+		
+		// Listen for typing
+		this.typingListener = qiscusEvents.on('typing', (data) => {
+			if (this.state.room && Number(data.room_id) === this.state.room.id) {
+				this._onTyping(data);
+			}
+		});
 	}
 
 	componentWillUnmount() {
 		Qiscus.qiscus.exitChatRoom();
-
-		this.subscription && this.subscription.unsubscribe();
+		
+		// Remove event listeners
+		if (this.newMessageListener) qiscusEvents.off('new-messages', this.newMessageListener);
+		if (this.readListener) qiscusEvents.off('comment-read', this.readListener);
+		if (this.deliveredListener) qiscusEvents.off('comment-delivered', this.deliveredListener);
+		if (this.presenceListener) qiscusEvents.off('presence', this.presenceListener);
+		if (this.typingListener) qiscusEvents.off('typing', this.typingListener);
 	}
 
 	render() {
@@ -457,7 +484,7 @@ export default class ChatScreen extends React.Component {
 		if (!this.state.isLoadMoreable) {
 			return;
 		}
-		const roomId = this.props.navigation.getParam('roomId', null);
+		const roomId = this.props.route.params?.roomId ?? null;
 		if (roomId == null) {
 			return;
 		}
@@ -565,25 +592,24 @@ export default class ChatScreen extends React.Component {
 
 }
 
-const styles = StyleSheet.create(css`
-	.container {
-		display: flex;
-		align-items: center;
-		background-color: #fafafa;
-		height: 100%;
-		width: 100%;
-	}
-	.onlineStatus {
-	}
-	.onlineStatusText {
-		font-size: 12px;
-		color: #94ca62;
-	}
-	.typingText {
-		font-size: 12px;
-		color: #979797;
-	}
-	.titleText {
-		font-size: 16px;
-	}
-`);
+const styles = StyleSheet.create({
+	container: {
+		display: 'flex',
+		alignItems: 'center',
+		backgroundColor: '#fafafa',
+		height: '100%',
+		width: '100%',
+	},
+	onlineStatus: {},
+	onlineStatusText: {
+		fontSize: 12,
+		color: '#94ca62',
+	},
+	typingText: {
+		fontSize: 12,
+		color: '#979797',
+	},
+	titleText: {
+		fontSize: 16,
+	},
+});

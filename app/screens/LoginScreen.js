@@ -10,12 +10,9 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
 } from 'react-native';
-import AsyncStorage, {
-  useAsyncStorage,
-} from '@react-native-async-storage/async-storage';
-import xs from 'xstream';
-import flattenConcurently from 'xstream/extra/flattenConcurrently';
+import {useAsyncStorage} from '@react-native-async-storage/async-storage';
 import * as Qiscus from 'qiscus';
+import {registerDeviceToken} from '../../index';
 
 export function LoginPage(props) {
   const storage = useAsyncStorage('qiscus');
@@ -23,36 +20,35 @@ export function LoginPage(props) {
   const [userKey, setUserKey] = useState('passkey');
   const [isLogin, setIsLogin] = useState(false);
 
-  // on mount
+  // Check if already logged in
   useEffect(() => {
-    const subscription = Qiscus.login$()
-      .map((it) => it.user)
-      .take(1)
-      .map((data) => xs.fromPromise(storage.setItem(JSON.stringify(data))))
-      .compose(flattenConcurently)
-      .subscribe({
-        next() {
-          setIsLogin(true);
-        },
-      });
-
-    return () => {
-      subscription.unsubscribe();
-    };
+    if (Qiscus.qiscus.isLogin) {
+      setIsLogin(true);
+    }
   }, []);
 
-  const onSubmit = useCallback(() => {
-    Qiscus.qiscus
-      .setUser(userId, userKey, userId)
-      .then((res) => console.log('success login', res))
-      .catch((err) => console.log('Failed login', err));
-  }, [userId, userKey]);
+  const onSubmit = useCallback(async () => {
+    try {
+      const res = await Qiscus.qiscus.setUser(userId, userKey, userId);
+      console.log('success login', res);
+      
+      // Save user data
+      await storage.setItem(JSON.stringify(res.user));
+      
+      // Register device token for push notifications
+      await registerDeviceToken();
+      
+      setIsLogin(true);
+    } catch (err) {
+      console.log('Failed login', err);
+    }
+  }, [userId, userKey, storage]);
 
   useEffect(() => {
     if (isLogin) {
       props.navigation.replace('RoomList');
     }
-  }, [isLogin]);
+  }, [isLogin, props.navigation]);
 
   return (
     <ScrollView keyboardShouldPersistTaps="handled">
@@ -105,31 +101,31 @@ export default class LoginScreen extends React.Component {
   };
 
   componentDidMount() {
-    this.subscription = Qiscus.login$()
-      .map((data) => data.user)
-      .take(1)
-      .subscribe({
-        next: (data) => {
-          AsyncStorage.setItem('qiscus', JSON.stringify(data))
-            .then(() => {
-              this.setState({isLogin: true});
-            })
-            .catch(() => {});
-        },
-      });
+    // Check if already logged in
+    if (Qiscus.qiscus.isLogin) {
+      this.setState({isLogin: true});
+    }
   }
 
-  componentWillUnmount() {
-    this.subscription.unsubscribe();
-  }
-
-  onSubmit = () => {
+  onSubmit = async () => {
     console.log('isinit:', Qiscus.qiscus.isInit);
     console.log('onsubmit:', this.state);
-    Qiscus.qiscus
-      .setUser(this.state.userId, this.state.userKey)
-      .then((res) => console.log('success login', res))
-      .catch((err) => console.log('Failed login', err));
+    try {
+      const res = await Qiscus.qiscus.setUser(this.state.userId, this.state.userKey);
+      console.log('success login', res);
+      
+      // Save user data
+      const {useAsyncStorage} = require('@react-native-async-storage/async-storage');
+      const storage = useAsyncStorage('qiscus');
+      await storage.setItem(JSON.stringify(res.user));
+      
+      // Register device token
+      await registerDeviceToken();
+      
+      this.setState({isLogin: true});
+    } catch (err) {
+      console.log('Failed login', err);
+    }
   };
 
   componentDidUpdate(prevProps, prevState) {
