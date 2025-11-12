@@ -1,52 +1,12 @@
-import xs from 'xstream';
-import mitt from 'mitt';
 import QiscusSDK from 'qiscus-sdk-core';
 import { Platform } from 'react-native';
-
-function distinct(stream) {
-	let subscription = null;
-	let lastData = null;
-
-	return xs.create({
-		start(listener) {
-			subscription = stream.subscribe({
-				next(data) {
-					if (data === lastData) {
-						return;
-					}
-
-					lastData = data;
-					listener.next(data);
-				},
-				error(error) {
-					listener.error(error);
-				},
-				complete() {
-					listener.complete();
-				},
-			});
-		},
-		stop() {
-			subscription?.unsubscribe();
-		},
-	});
-}
+import EventEmitter from 'eventemitter3';
 
 export const qiscus = new QiscusSDK();
 const appId = 'sdksample';
 
-const event = mitt();
-export const event$ = xs.create({
-	start(listener) {
-		event.on('event', function (data) {
-			listener.next({
-				kind: data.kind,
-				data: data.data,
-			});
-		});
-	},
-	stop() {},
-});
+// Create event emitter to bridge Qiscus callbacks to components
+export const qiscusEvents = new EventEmitter();
 export const getFileExtension = (name) =>
 	name?.slice((Math.max(0, name.lastIndexOf('.')) || Infinity) + 1);
 /*
@@ -93,57 +53,41 @@ export function init() {
 		AppId: appId,
 		options: {
 			loginSuccessCallback(authData) {
-				event.emit('event', { kind: 'login-success', data: authData });
+				console.log('Login success:', authData);
+				qiscusEvents.emit('login-success', authData);
 			},
 			newMessagesCallback(messages) {
-				messages.forEach((message) => {
-					event.emit('event', { kind: 'new-message', data: message });
-				});
+				console.log('New messages:', messages);
+				qiscusEvents.emit('new-messages', messages);
 			},
 			presenceCallback(data) {
-				data = data.split(':');
-				const isOnline = data[0] === '1';
-				const lastOnline = new Date(Number(data[1]));
-				event.emit('event', {
-					kind: 'online-presence',
-					data: { isOnline, lastOnline },
-				});
+				const parts = data.split(':');
+				const isOnline = parts[0] === '1';
+				const lastOnline = new Date(Number(parts[1]));
+				console.log('Presence:', { isOnline, lastOnline });
+				qiscusEvents.emit('presence', { isOnline, lastOnline });
 			},
 			commentReadCallback: (data) => {
-				event.emit('event', { kind: 'comment-read', data });
+				console.log('Comment read:', data);
+				qiscusEvents.emit('comment-read', data);
 			},
 			commentDeliveredCallback(data) {
-				event.emit('event', { kind: 'comment-delivered', data });
+				console.log('Comment delivered:', data);
+				qiscusEvents.emit('comment-delivered', data);
 			},
 			typingCallback(data) {
-				event.emit('event', { kind: 'typing', data });
+				console.log('Typing:', data);
+				qiscusEvents.emit('typing', data);
 			},
 			chatRoomCreatedCallback(data) {
-				event.emit('event', { kind: 'chat-room-created', data });
+				console.log('Chat room created:', data);
+				qiscusEvents.emit('chat-room-created', data);
 			},
 		},
 	});
 }
 
 export const currentUser = () => qiscus.userData;
-export const login$ = () =>
-	event$.filter((it) => it.kind === 'login-success').map((it) => it.data);
-export const isLogin$ = () =>
-	xs
-		.periodic(300)
-		.map(() => qiscus.isLogin)
-		.compose(distinct)
-		.filter((it) => it === true);
-export const newMessage$ = () =>
-	event$.filter((it) => it.kind === 'new-message').map((it) => it.data);
-export const messageRead$ = () =>
-	event$.filter((it) => it.kind === 'comment-read').map((it) => it.data);
-export const messageDelivered$ = () =>
-	event$.filter((it) => it.kind === 'comment-delivered').map((it) => it.data);
-export const onlinePresence$ = () =>
-	event$.filter((it) => it.kind === 'online-presence').map((it) => it.data);
-export const typing$ = () =>
-	event$.filter((it) => it.kind === 'typing').map((it) => it.data);
 
 export function setDeviceToken(token) {
 	console.log('qiscus.isLogin', qiscus.isLogin);
@@ -152,3 +96,26 @@ export function setDeviceToken(token) {
 
 	return qiscus.registerDeviceToken(token);
 }
+
+// Helper function to wait for login
+export const waitForLogin = () => {
+	return new Promise((resolve) => {
+		if (qiscus.isLogin) {
+			resolve(true);
+			return;
+		}
+		
+		const checkInterval = setInterval(() => {
+			if (qiscus.isLogin) {
+				clearInterval(checkInterval);
+				resolve(true);
+			}
+		}, 300);
+		
+		// Timeout after 10 seconds
+		setTimeout(() => {
+			clearInterval(checkInterval);
+			resolve(false);
+		}, 10000);
+	});
+};
