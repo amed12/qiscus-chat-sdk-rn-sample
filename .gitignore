@@ -57,3 +57,46 @@ buck-out/
 
 # CocoaPods
 /ios/Pods/
+
+# Android build artifacts (generated during build)
+android/.cxx/
+android/.gradle/
+android/app/build/
+android/build/
+android/app/.cxx/
+android/app/build/intermediates/
+android/app/build/generated/
+android/app/build/outputs/
+android/app/build/tmp/
+*.apk
+*.aab
+
+# Metro bundler
+.metro-health-check*
+.metro/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+error_android.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Firebase (keep google-services.json but ignore backups)
+android/app/google-services_*.json
+ios/GoogleService-Info_*.plist
