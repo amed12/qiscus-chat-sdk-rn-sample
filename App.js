@@ -9,12 +9,7 @@ import notifee, {AndroidImportance} from '@notifee/react-native';
 
 import * as Qiscus from 'qiscus';
 import {LoginPage as LoginScreen} from 'screens/LoginScreen';
-import ProfileScreen from 'screens/ProfileScreen';
-import RoomListScreen from 'screens/RoomListScreen';
 import ChatScreen from 'screens/ChatScreen';
-import UserListScreen from 'screens/UserListScreen';
-import CreateGroupScreen from 'screens/CreateGroupScreen';
-import RoomInfoScreen from 'screens/RoomInfo';
 
 const Stack = createNativeStackNavigator();
 
@@ -119,12 +114,7 @@ export default function Application() {
           }}
           initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Profile" component={ProfileScreen} />
-          <Stack.Screen name="RoomList" component={RoomListScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
-          <Stack.Screen name="UserList" component={UserListScreen} />
-          <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
-          <Stack.Screen name="RoomInfo" component={RoomInfoScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

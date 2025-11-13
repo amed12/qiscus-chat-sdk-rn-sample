@@ -43,7 +43,8 @@ export default class ChatScreen extends React.Component {
 	componentDidMount() {
 		const roomId = this.props.route.params?.roomId ?? null;
 		if (roomId == null) {
-			return this.props.navigation.replace('RoomList');
+			console.error('[ChatScreen] No roomId provided');
+			return this.props.navigation.replace('Login');
 		}
 		
 		// Load room and messages
@@ -164,34 +165,23 @@ export default class ChatScreen extends React.Component {
 				enabled>
 				<Toolbar
 					title={<Text style={styles.titleText}>{roomName}</Text>}
-					onPress={this._onToolbarClick}
 					renderLeftButton={() => (
-						<TouchableOpacity
-							onPress={() => this.props.navigation.replace('RoomList')}
-							style={{
-								display: 'flex',
-								flexDirection: 'row',
-								flex: 0,
-							}}>
-							<Image
-								source={require('assets/ic_back.png')}
-								style={{
-									width: 25,
-									height: 25,
-									resizeMode: 'contain',
-								}}
-							/>
+						<View style={{
+							display: 'flex',
+							flexDirection: 'row',
+							flex: 0,
+							alignItems: 'center',
+						}}>
 							<Image
 								source={{ uri: avatarURL }}
 								style={{
-									width: 25,
-									height: 25,
+									width: 35,
+									height: 35,
 									resizeMode: 'cover',
 									borderRadius: 50,
-									marginLeft: 10,
 								}}
 							/>
-						</TouchableOpacity>
+						</View>
 					)}
 					renderRightButton={() => (
 						<TouchableOpacity
@@ -555,11 +545,6 @@ export default class ChatScreen extends React.Component {
 
 	_sortMessage = (messages) =>
 		messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-	_onToolbarClick = () => {
-		const roomId = this.state.room.id;
-		this.props.navigation.navigate('RoomInfo', { roomId });
-	};
 
 	get isGroup() {
 		if (this.state.room == null || this.state.room.room_type == null) {
