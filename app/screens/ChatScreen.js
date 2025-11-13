@@ -7,6 +7,7 @@ import {
 	Text,
 	TouchableOpacity,
 	View,
+	SafeAreaView,
 } from 'react-native';
 import DocumentPicker, {
 	isInProgress,
@@ -24,6 +25,8 @@ import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
 import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {multichannelApi} from '../qiscus/multichannelApi';
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -52,14 +55,16 @@ export default class ChatScreen extends React.Component {
 	
 	loadRoomData = async (roomId) => {
 		try {
-			if (!Qiscus.qiscus.isLogin) {
+			if (!Qiscus.qiscus.isLogin || !Qiscus.qiscus.userData) {
 				console.log('User not logged in');
 				return;
 			}
 			
 			// Load room
-			const room = await Qiscus.qiscus.getRoomById(roomId);
+			const room = {id: roomId};
 			this.setState({ room });
+			// wait for qiscus ready on 3 seconds
+			await new Promise(resolve => setTimeout(resolve, 300));
 			
 			// Load messages
 			const messages = await Qiscus.qiscus.loadComments(roomId);
@@ -75,6 +80,31 @@ export default class ChatScreen extends React.Component {
 			});
 		} catch (error) {
 			console.error('Error loading room data:', error);
+		}
+	};
+	
+	_handleLogout = async () => {
+		try {
+			console.log('[ChatScreen] Logging out...');
+			
+			// Clear session storage
+			await multichannelApi.clearSession();
+			
+			// Clear user storage
+			await AsyncStorage.removeItem('qiscus');
+			
+			// Clear Qiscus SDK
+			if (Qiscus.qiscus.isLogin) {
+				await Qiscus.qiscus.disconnect();
+			}
+			
+			console.log('[ChatScreen] Logout successful');
+			
+			// Navigate to Login screen
+			this.props.navigation.replace('Login');
+		} catch (error) {
+			console.error('[ChatScreen] Logout error:', error);
+			toast('Failed to logout');
 		}
 	};
 	
@@ -127,7 +157,7 @@ export default class ChatScreen extends React.Component {
 		const showTyping = room != null && !this.isGroup && isTyping;
 
 		return (
-			<View
+			<SafeAreaView
 				style={styles.container}
 				keyboardVerticalOffset={StatusBar.currentHeight}
 				behavior="padding"
@@ -161,6 +191,18 @@ export default class ChatScreen extends React.Component {
 									marginLeft: 10,
 								}}
 							/>
+						</TouchableOpacity>
+					)}
+					renderRightButton={() => (
+						<TouchableOpacity
+							onPress={this._handleLogout}
+							style={{
+								paddingHorizontal: 15,
+								paddingVertical: 5,
+								backgroundColor: '#FF4444',
+								borderRadius: 5,
+							}}>
+							<Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Logout</Text>
 						</TouchableOpacity>
 					)}
 					renderMeta={() => (
@@ -200,7 +242,7 @@ export default class ChatScreen extends React.Component {
 					onSubmit={this._submitMessage}
 					onSelectFile={this._onSelectModal}
 				/>
-			</View>
+			</SafeAreaView>
 		);
 	}
 

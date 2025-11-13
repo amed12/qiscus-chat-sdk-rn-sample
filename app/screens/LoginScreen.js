@@ -15,42 +15,112 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useAsyncStorage} from '@react-native-async-storage/async-storage';
 import * as Qiscus from 'qiscus';
 import {registerDeviceToken} from '../../index';
+import {multichannelApi} from '../qiscus/multichannelApi';
+import {APP_CONFIG} from '../config/appConfig';
 
 export function LoginPage(props) {
   const storage = useAsyncStorage('qiscus');
-  const [userId, setUserId] = useState('guest-101');
-  const [userKey, setUserKey] = useState('passkey');
-  const [isLogin, setIsLogin] = useState(false);
+  const [userId, setUserId] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Check if already logged in
+  // Listen to login success event
   useEffect(() => {
-    if (Qiscus.qiscus.isLogin) {
-      setIsLogin(true);
-    }
+    const handleLoginSuccess = (authData) => {
+      console.log('[LoginScreen] Login success event received:', authData);
+      reInitiateChat();
+    };
+
+    // Subscribe to login-success event
+    Qiscus.qiscusEvents.on('login-success', handleLoginSuccess);
+
+    // Cleanup listener on unmount
+    return () => {
+      Qiscus.qiscusEvents.off('login-success', handleLoginSuccess);
+    };
   }, []);
 
-  const onSubmit = useCallback(async () => {
+  const reInitiateChat = async () => {
     try {
-      const res = await Qiscus.qiscus.setUser(userId, userKey, userId);
-      console.log('success login', res);
+      // Get stored user data for fallback
+      const storedData = await storage.getItem();
+      if (!storedData) {
+        console.log('[LoginScreen] No stored user data found');
+        return;
+      }
+
+      const userData = JSON.parse(storedData);
+      const storedUserId = userData.email || userData.username || 'guest-101';
+
+      console.log('[LoginScreen] Restoring session for:', storedUserId);
+
+      // Initiate chat with session restoration
+      const result = await multichannelApi.initiateChat(
+        APP_CONFIG.qiscus.appId,
+        APP_CONFIG.qiscus.channelId,
+        {
+          userId: storedUserId,
+          displayName: storedUserId,
+          avatarUrl: null,
+        }
+      );
+
+      const action = result.restored ? 'restored' : 'created';
+      console.log(`[LoginScreen] Session ${action}, navigating to room:`, result.roomId);
+
+      // Navigate to chat
+      props.navigation.replace('Chat', { roomId: result.roomId });
+    } catch (err) {
+      console.error('[LoginScreen] Failed to restore session:', err.message);
+      // If restoration fails, user needs to login again
+    }
+  };
+
+  const onSubmit = useCallback(async () => {
+    if (!userId.trim()) {
+      alert('Please enter your User ID');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const userIdTrimmed = userId.trim();
+      const displayNameTrimmed = displayName.trim() || userIdTrimmed;
       
-      // Save user data
-      await storage.setItem(JSON.stringify(res.user));
+      console.log('[LoginScreen] Starting chat for:', userIdTrimmed);
+      
+      // Initiate chat (will check for existing session automatically)
+      const result = await multichannelApi.initiateChat(
+        APP_CONFIG.qiscus.appId,
+        APP_CONFIG.qiscus.channelId,
+        {
+          userId: userIdTrimmed,
+          displayName: displayNameTrimmed,
+          avatarUrl: null,
+        }
+      );
+      
+      const action = result.restored ? 'Session restored' : 'New chat initiated';
+      console.log(`[LoginScreen] ${action}:`, result.roomId);
+      
+      // Save user data for backward compatibility
+      await storage.setItem(JSON.stringify({ 
+        email: result.userId,
+        username: result.userId 
+      }));
       
       // Register device token for push notifications
       await registerDeviceToken();
       
-      setIsLogin(true);
+      // Navigate to Chat screen
+      props.navigation.replace('Chat', { roomId: result.roomId });
     } catch (err) {
-      console.log('Failed login', err);
+      console.error('[LoginScreen] Failed to start chat:', err.message);
+      alert(err.message || 'Failed to start chat. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [userId, userKey, storage]);
-
-  useEffect(() => {
-    if (isLogin) {
-      props.navigation.replace('RoomList');
-    }
-  }, [isLogin, props.navigation]);
+  }, [userId, displayName, storage, props.navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -63,31 +133,54 @@ export function LoginPage(props) {
             style={styles.background}>
             <View style={styles.container}>
               <Image source={require('assets/logo.png')} style={styles.logo} />
+              
+              {/* Welcome Text */}
+              <Text style={styles.welcomeTitle}>Welcome to Customer Support</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Chat with our support team for any assistance
+              </Text>
+              
               <View style={styles.form}>
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>User ID</Text>
+                  <Text style={styles.label}>Your Name or Email</Text>
                   <TextInput
                     style={styles.input}
                     onChangeText={(text) => setUserId(text)}
                     value={userId}
+                    placeholder="e.g. john@example.com"
+                    placeholderTextColor="#999"
+                    autoCapitalize="none"
+                    editable={!isLoading}
                   />
                 </View>
+                
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>User Key</Text>
+                  <Text style={styles.label}>Display Name (Optional)</Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={(text) => setUserKey(text)}
-                    value={userKey}
-                    secureTextEntry={true}
+                    onChangeText={(text) => setDisplayName(text)}
+                    value={displayName}
+                    placeholder="e.g. John Doe"
+                    placeholderTextColor="#999"
+                    editable={!isLoading}
                   />
                 </View>
+                
                 <View style={styles.formGroup}>
                   <TouchableOpacity
-                    style={styles.submitButton}
-                    onPress={onSubmit}>
-                    <Text style={styles.submitText}>Start</Text>
+                    style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
+                    onPress={onSubmit}
+                    disabled={isLoading}>
+                    <Text style={styles.submitText}>
+                      {isLoading ? 'Connecting...' : 'Start Chat with Support'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
+                
+                {/* Info Text */}
+                <Text style={styles.infoText}>
+                  💬 You'll be connected to our customer support team
+                </Text>
               </View>
             </View>
           </ImageBackground>
@@ -243,18 +336,52 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: '#9aca62',
-    borderRadius: 2,
+    borderRadius: 8,
     fontStyle: 'normal',
     fontWeight: '600',
     fontSize: 12,
     color: 'white',
-    paddingVertical: 15,
+    paddingVertical: 16,
     paddingHorizontal: 10,
     textTransform: 'uppercase',
     alignItems: 'center',
+    shadowColor: '#9aca62',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#ccc',
+    shadowOpacity: 0,
+    elevation: 0,
   },
   submitText: {
     color: 'white',
-    textTransform: 'capitalize',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
   },
 });

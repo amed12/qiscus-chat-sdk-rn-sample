@@ -1,9 +1,9 @@
 import QiscusSDK from 'qiscus-sdk-core';
 import { Platform } from 'react-native';
 import EventEmitter from 'eventemitter3';
+import { APP_CONFIG } from '../config/appConfig';
 
 export const qiscus = new QiscusSDK();
-const appId = 'sdksample';
 
 // Create event emitter to bridge Qiscus callbacks to components
 export const qiscusEvents = new EventEmitter();
@@ -50,7 +50,7 @@ export const isUnSupportFileType = (name) =>
 export function init() {
 	console.log('initiate qiscus');
 	qiscus.init({
-		AppId: appId,
+		AppId: APP_CONFIG.qiscus.appId,
 		options: {
 			loginSuccessCallback(authData) {
 				console.log('Login success:', authData);
@@ -85,6 +85,7 @@ export function init() {
 			},
 		},
 	});
+	qiscus.debugMode = true;
 }
 
 export const currentUser = () => qiscus.userData;
