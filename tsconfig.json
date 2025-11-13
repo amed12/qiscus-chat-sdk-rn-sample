@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "commonjs",
+    "lib": ["es2017", "es2019", "es2020"],
+    "jsx": "react-native",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "baseUrl": ".",
+    "paths": {
+      "*": ["*"],
+      "qiscus": ["./app/qiscus"],
+      "screens/*": ["./app/screens/*"],
+      "components/*": ["./app/components/*"],
+      "utils/*": ["./app/utils/*"],
+      "config/*": ["./app/config/*"],
+      "assets/*": ["./assets/*"]
+    },
+    "types": ["react-native", "jest"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "babel.config.js",
+    "metro.config.js",
+    "jest.config.js"
+  ]
+}

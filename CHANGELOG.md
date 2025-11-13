@@ -7,10 +7,143 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-11-13
+
+### 🎉 Qiscus SDK v3 Migration
+
+Complete migration to Qiscus SDK v3 with full TypeScript support and modern patterns.
+
+### ⚠️ BREAKING CHANGES
+
+- **Qiscus SDK**: Migrated from v2 to v3 (qiscus-sdk-javascript)
+- **Message Properties**: Changed from snake_case to camelCase
+  - `user_id` → `sender.id`
+  - `message` → `text`
+  - `unique_id` → `uniqueId`
+  - `comment_before_id` → `previousMessageId`
+- **SDK Methods**: Updated to v3 API
+  - `init()` → `setup()`
+  - `isLogin()` → `hasSetupUser()`
+  - `getNonce()` → `getJWTNonce()`
+- **Event Handling**: Now uses SDK's built-in event methods
+  - `onMessageReceived()`
+  - `onMessageDelivered()`
+  - `onMessageRead()`
+  - `onUserTyping()`
+  - `onUserOnlinePresence()`
+
 ### Added
-- Comprehensive commit conventions documentation
-- Enhanced .gitignore for build artifacts and temporary files
-- Complete migration and testing guides
+
+#### SDK v3 Features
+- ✅ Official TypeScript types from SDK
+- ✅ `IQMessage`, `IQChatRoom`, `IQAccount`, `IQUser` interfaces
+- ✅ Room subscription management (`subscribeChatRoom`/`unsubscribeChatRoom`)
+- ✅ Internal storage manipulation for session restoration
+- ✅ Proper message generation with `generateMessage()`
+- ✅ File attachment support with `generateFileAttachmentMessage()`
+
+#### UI Improvements
+- ✅ Auto-scroll to bottom on new messages
+- ✅ Reversed message order (newest at bottom)
+- ✅ Proper message bubble alignment
+- ✅ Real-time message status updates
+
+### Changed
+
+#### Core Files Migrated
+- **qiscus/index.ts**: Complete SDK v3 integration
+- **qiscus/multichannelApi.ts**: Session restoration with internal storage
+- **screens/ChatScreen.tsx**: Full TypeScript with SDK v3 types
+- **screens/LoginScreen.tsx**: Proper type safety with `IQAccount`
+- **components/MessageList.tsx**: SDK v3 message properties
+
+#### Message Handling
+- Messages now use `text` property instead of `message`
+- User identification via `sender.id` instead of `user_id`
+- Pagination uses `previousMessageId` instead of `comment_before_id`
+- Proper `IQMessage` typing throughout
+
+#### Session Management
+- Added internal storage manipulation for session persistence
+- Proper token storage and restoration
+- Session survives app restarts
+
+### Fixed
+
+#### Critical Fixes
+- ✅ **Session Restoration**: Added internal storage manipulation
+  - `qiscus.storage.setAppId()`
+  - `qiscus.storage.setCurrentUser()`
+  - `qiscus.storage.setToken()`
+- ✅ **Message Rendering**: Fixed property names for SDK v3
+- ✅ **Room Subscription**: Added proper subscribe/unsubscribe lifecycle
+- ✅ **Pagination**: Fixed `getPreviousMessagesById` parameter order
+- ✅ **Message Order**: Reversed to show newest at bottom
+- ✅ **Auto-scroll**: Implemented smooth scroll to latest message
+
+#### Type Safety
+- All screens now fully TypeScript
+- No more `any` types for SDK objects
+- Proper interface usage from official SDK types
+
+### Removed
+- ❌ All temporary migration documentation files
+- ❌ Deprecated property names (snake_case)
+- ❌ Legacy event handling patterns
+- ❌ Debug panel (moved to production-ready state)
+
+### Migration Notes
+
+#### Key SDK v3 Patterns
+
+**Session Restoration:**
+```typescript
+// Required for session persistence
+await qiscus.setUserWithIdentityToken(token);
+qiscus.storage.setAppId(appId);
+qiscus.storage.setCurrentUser(userData);
+qiscus.storage.setToken(token);
+```
+
+**Message Generation:**
+```typescript
+// Always generate message first
+const message = qiscus.generateMessage({
+  roomId: room.id,
+  text: 'Hello'
+});
+await qiscus.sendMessage(message);
+```
+
+**Room Subscription:**
+```typescript
+// Subscribe when entering room
+qiscus.subscribeChatRoom(room);
+
+// Unsubscribe when leaving
+qiscus.unsubscribeChatRoom(room);
+```
+
+**Event Handling:**
+```typescript
+// Use SDK's built-in methods
+const subscription = qiscus.onMessageReceived((message) => {
+  // Handle message
+});
+
+// Cleanup
+subscription(); // Call to unsubscribe
+```
+
+### Documentation
+- Consolidated to README.md and CHANGELOG.md only
+- All migration details in this changelog
+- Complete version history maintained
+
+### Performance
+- Improved message rendering with proper types
+- Optimized event subscriptions
+- Better memory management with proper cleanup
 
 ## [2.0.0] - 2025-11-12
 
@@ -252,22 +385,24 @@ const {dirs} = ReactNativeBlobUtil.fs;
 
 ## Version History Summary
 
-| Version | Date | React Native | React | Major Changes |
-|---------|------|--------------|-------|---------------|
-| 2.0.0 | 2025-11-12 | 0.79.2 | 19.0.0 | Complete modernization |
-| 1.0.0 | Previous | 0.70.x | 18.x | Initial release |
+| Version | Date | React Native | React | Qiscus SDK | Major Changes |
+|---------|------|--------------|-------|------------|---------------|
+| 3.0.0 | 2025-11-13 | 0.79.2 | 19.0.0 | v3 | SDK v3 migration + TypeScript |
+| 2.0.0 | 2025-11-12 | 0.79.2 | 19.0.0 | v2 | Complete modernization |
+| 1.0.0 | Previous | 0.70.x | 18.x | v2 | Initial release |
 
 ## Upgrade Path
 
-- **From 1.0.0 to 2.0.0**: Follow `MIGRATION_GUIDE.md` - Major breaking changes
+- **From 2.0.0 to 3.0.0**: SDK v3 migration - See v3.0.0 release notes above
+- **From 1.0.0 to 2.0.0**: Complete modernization - See v2.0.0 release notes
 - **Future updates**: Will follow semantic versioning
 
 ## Support
 
 For issues, questions, or contributions:
-- Check `TESTING_GUIDE.md` for common issues
-- Review `MIGRATION_GUIDE.md` for upgrade help
-- See `COMMIT_CONVENTIONS.md` for contribution guidelines
+- Check README.md troubleshooting section
+- Review this CHANGELOG for migration details
+- Follow conventional commits for contributions
 
 ---
 

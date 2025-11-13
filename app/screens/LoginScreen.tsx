@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,15 +10,26 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {useAsyncStorage} from '@react-native-async-storage/async-storage';
-import * as Qiscus from 'qiscus';
-import {registerDeviceToken} from '../../index';
-import {multichannelApi} from '../qiscus/multichannelApi';
-import {APP_CONFIG} from '../config/appConfig';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAsyncStorage } from '@react-native-async-storage/async-storage';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import * as Qiscus from '../qiscus';
+import { IQAccount } from 'qiscus-sdk-javascript/types/model';
+import { registerDeviceToken } from '../../index';
+import { multichannelApi } from '../qiscus/multichannelApi';
+import { APP_CONFIG } from '../config/appConfig';
+import type { InitiateChatResult } from '../types/qiscus.types';
 
-export function LoginPage(props) {
+type RootStackParamList = {
+  Login: undefined;
+  Chat: { roomId: number };
+};
+
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
+
+export function LoginPage({ navigation }: Props) {
   const storage = useAsyncStorage('qiscus');
   const [userId, setUserId] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -26,8 +37,11 @@ export function LoginPage(props) {
 
   // Listen to login success event
   useEffect(() => {
-    const handleLoginSuccess = (authData) => {
-      console.log('[LoginScreen] Login success event received:', authData);
+    const handleLoginSuccess = (authData: IQAccount) => {
+      console.log('[LoginScreen] Login success event received:', {
+        userId: authData.id,
+        name: authData.name,
+      });
       reInitiateChat();
     };
 
@@ -40,7 +54,7 @@ export function LoginPage(props) {
     };
   }, []);
 
-  const reInitiateChat = async () => {
+  const reInitiateChat = async (): Promise<void> => {
     try {
       // Get stored user data for fallback
       const storedData = await storage.getItem();
@@ -55,30 +69,30 @@ export function LoginPage(props) {
       console.log('[LoginScreen] Restoring session for:', storedUserId);
 
       // Initiate chat with session restoration
-      const result = await multichannelApi.initiateChat(
+      const result: InitiateChatResult = await multichannelApi.initiateChat(
         APP_CONFIG.qiscus.appId,
         APP_CONFIG.qiscus.channelId,
-        {
-          userId: storedUserId,
-          displayName: storedUserId,
-          avatarUrl: null,
-        }
+        storedUserId,
+        storedUserId,
+        undefined,
+        undefined
       );
 
       const action = result.restored ? 'restored' : 'created';
       console.log(`[LoginScreen] Session ${action}, navigating to room:`, result.roomId);
 
       // Navigate to chat
-      props.navigation.replace('Chat', { roomId: result.roomId });
+      navigation.replace('Chat', { roomId: result.roomId });
     } catch (err) {
-      console.error('[LoginScreen] Failed to restore session:', err.message);
+      const error = err as Error;
+      console.error('[LoginScreen] Failed to restore session:', error.message);
       // If restoration fails, user needs to login again
     }
   };
 
-  const onSubmit = useCallback(async () => {
+  const onSubmit = useCallback(async (): Promise<void> => {
     if (!userId.trim()) {
-      alert('Please enter your User ID');
+      Alert.alert('Error', 'Please enter your User ID');
       return;
     }
 
@@ -86,97 +100,111 @@ export function LoginPage(props) {
       setIsLoading(true);
       const userIdTrimmed = userId.trim();
       const displayNameTrimmed = displayName.trim() || userIdTrimmed;
-      
+
       console.log('[LoginScreen] Starting chat for:', userIdTrimmed);
-      
+
       // Initiate chat (will check for existing session automatically)
-      const result = await multichannelApi.initiateChat(
+      const result: InitiateChatResult = await multichannelApi.initiateChat(
         APP_CONFIG.qiscus.appId,
         APP_CONFIG.qiscus.channelId,
-        {
-          userId: userIdTrimmed,
-          displayName: displayNameTrimmed,
-          avatarUrl: null,
-        }
+        userIdTrimmed,
+        displayNameTrimmed,
+        undefined,
+        undefined
       );
-      
+
       const action = result.restored ? 'Session restored' : 'New chat initiated';
-      console.log(`[LoginScreen] ${action}:`, result.roomId);
-      
+      console.log(`[LoginScreen] ${action}:`, {
+        roomId: result.roomId,
+        userId: result.userId,
+        restored: result.restored,
+      });
+
       // Save user data for backward compatibility
-      await storage.setItem(JSON.stringify({ 
-        email: result.userId,
-        username: result.userId 
-      }));
-      
+      await storage.setItem(
+        JSON.stringify({
+          email: result.userId,
+          username: result.userId,
+        })
+      );
+
       // Register device token for push notifications
-      await registerDeviceToken();
-      
+      try {
+        await registerDeviceToken();
+        console.log('[LoginScreen] Device token registered');
+      } catch (tokenError) {
+        console.warn('[LoginScreen] Failed to register device token:', tokenError);
+        // Don't block login if token registration fails
+      }
+
       // Navigate to Chat screen
-      props.navigation.replace('Chat', { roomId: result.roomId });
+      navigation.replace('Chat', { roomId: result.roomId });
     } catch (err) {
-      console.error('[LoginScreen] Failed to start chat:', err.message);
-      alert(err.message || 'Failed to start chat. Please try again.');
+      const error = err as Error;
+      console.error('[LoginScreen] Failed to start chat:', error.message);
+      Alert.alert('Error', error.message || 'Failed to start chat. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }, [userId, displayName, storage, props.navigation]);
+  }, [userId, displayName, navigation, storage]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView 
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scrollContent}>
         <KeyboardAvoidingView enabled behavior="padding">
-          <ImageBackground
-            source={require('assets/bg-pattern.png')}
-            style={styles.background}>
+          <ImageBackground source={require('assets/bg-pattern.png')} style={styles.background}>
             <View style={styles.container}>
               <Image source={require('assets/logo.png')} style={styles.logo} />
-              
+
               {/* Welcome Text */}
-              <Text style={styles.welcomeTitle}>Welcome to Customer Support</Text>
-              <Text style={styles.welcomeSubtitle}>
-                Chat with our support team for any assistance
-              </Text>
-              
+              <View style={styles.welcomeContainer}>
+                <Text style={styles.welcomeTitle}>Welcome to Customer Support</Text>
+                <Text style={styles.welcomeSubtitle}>
+                  We're here to help! Enter your details to start chatting with our support team.
+                </Text>
+              </View>
+
               <View style={styles.form}>
+                {/* User ID Input */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Your Name or Email</Text>
+                  <Text style={styles.label}>Email or User ID</Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={(text) => setUserId(text)}
+                    onChangeText={setUserId}
                     value={userId}
-                    placeholder="e.g. john@example.com"
+                    placeholder="Enter your email or ID"
                     placeholderTextColor="#999"
                     autoCapitalize="none"
+                    keyboardType="email-address"
                     editable={!isLoading}
                   />
                 </View>
-                
+
+                {/* Display Name Input */}
                 <View style={styles.formGroup}>
-                  <Text style={styles.label}>Display Name (Optional)</Text>
+                  <Text style={styles.label}>Your Name (Optional)</Text>
                   <TextInput
                     style={styles.input}
-                    onChangeText={(text) => setDisplayName(text)}
+                    onChangeText={setDisplayName}
                     value={displayName}
-                    placeholder="e.g. John Doe"
+                    placeholder="Enter your name"
                     placeholderTextColor="#999"
                     editable={!isLoading}
                   />
                 </View>
-                
+
+                {/* Submit Button */}
                 <View style={styles.formGroup}>
                   <TouchableOpacity
                     style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
                     onPress={onSubmit}
                     disabled={isLoading}>
                     <Text style={styles.submitText}>
-                      {isLoading ? 'Connecting...' : 'Start Chat with Support'}
+                      {isLoading ? 'Starting Chat...' : 'Start Chat'}
                     </Text>
                   </TouchableOpacity>
                 </View>
-                
+
                 {/* Info Text */}
                 <Text style={styles.infoText}>
                   💬 You'll be connected to our customer support team
@@ -217,11 +245,28 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     width: '80%',
   },
+  welcomeContainer: {
+    marginTop: 40,
+    width: '100%',
+  },
+  welcomeTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    textAlign: 'center',
+  },
+  welcomeSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    paddingHorizontal: 20,
+  },
   form: {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    marginTop: 80,
+    marginTop: 40,
     width: '100%',
   },
   formGroup: {
@@ -232,7 +277,6 @@ const styles = StyleSheet.create({
   label: {
     fontStyle: 'normal',
     fontWeight: '600',
-    // lineHeight: 'normal',
     fontSize: 11,
     textTransform: 'uppercase',
     color: '#979797',
@@ -242,6 +286,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    color: '#333',
   },
   submitButton: {
     backgroundColor: '#9aca62',
@@ -272,20 +318,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
-  },
-  welcomeTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  welcomeSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginTop: 8,
-    paddingHorizontal: 20,
   },
   infoText: {
     fontSize: 13,

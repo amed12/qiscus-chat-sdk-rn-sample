@@ -1,14 +1,20 @@
-import React from "react";
-import { View, TouchableWithoutFeedback, StyleSheet, Text } from "react-native";
-export default class Toolbar extends React.PureComponent {
+import React from 'react';
+import { View, TouchableWithoutFeedback, StyleSheet, Text } from 'react-native';
+
+interface ToolbarProps {
+  title?: string;
+  onPress?: () => void;
+  renderLeftButton?: () => React.ReactNode;
+  renderRightButton?: () => React.ReactNode;
+  renderMeta?: () => React.ReactNode;
+}
+
+export default class Toolbar extends React.PureComponent<ToolbarProps> {
   render() {
     return (
       <View style={styles.container}>
         {this.props.renderLeftButton && this.props.renderLeftButton()}
-        <TouchableWithoutFeedback
-          style={styles.titleButton}
-          onPress={this._onPress}
-        >
+        <TouchableWithoutFeedback style={styles.titleButton} onPress={this._onPress}>
           <View style={styles.titleContainer}>
             <Text style={styles.title}>{this.props.title}</Text>
             {this.props.renderMeta && this.props.renderMeta()}

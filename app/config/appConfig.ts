@@ -3,11 +3,36 @@
  * Centralized config for app-wide constants
  */
 
-export const APP_CONFIG = {
+interface QiscusConfig {
+  appId: string;
+  channelId: number;
+}
+
+interface ApiConfig {
+  multichannel: string;
+  qismo: string;
+}
+
+interface StorageConfig {
+  userKey: string;
+}
+
+interface DebugConfig {
+  enableLogging: boolean;
+}
+
+interface AppConfiguration {
+  qiscus: QiscusConfig;
+  api: ApiConfig;
+  storage: StorageConfig;
+  debug: DebugConfig;
+}
+
+export const APP_CONFIG: AppConfiguration = {
   // Qiscus Multichannel Configuration
   qiscus: {
-    appId: 'obbbw-qh0w3g85jirurwg',
-    channelId: 126308,
+    appId: 'your-app-id',
+    channelId: 0,
   },
 
   // API Configuration

@@ -1,10 +1,10 @@
 import firebase from '@react-native-firebase/app';
 import '@react-native-firebase/messaging';
 
-import * as Qiscus from 'qiscus';
+import * as Qiscus from '../qiscus';
 
 // Get FCM token
-export const getToken = async () => {
+export const getToken = async (): Promise<string> => {
   try {
     const token = await firebase.messaging().getToken();
     return token;
@@ -15,9 +15,12 @@ export const getToken = async () => {
 };
 
 // Initialize Firebase messaging and register device token
-export const initiate = async () => {
+export const initiate = async (): Promise<void> => {
   try {
-    if (!Qiscus.qiscus.isLogin) {
+    // v3: Check if user is logged in
+    const isLoggedIn = await Qiscus.isUserLoggedIn();
+    
+    if (!isLoggedIn) {
       console.log('User not logged in, skipping FCM token registration');
       return;
     }
@@ -32,13 +35,14 @@ export const initiate = async () => {
 };
 
 // Request notification permission
-export async function requestPermission() {
+export async function requestPermission(): Promise<number> {
   try {
-    const enabled = await firebase.messaging().hasPermission();
-    if (!enabled) {
+    const authStatus = await firebase.messaging().hasPermission();
+    if (authStatus === 0) {
+      // Not authorized, request permission
       await firebase.messaging().requestPermission();
     }
-    return enabled;
+    return authStatus;
   } catch (error) {
     console.error('Error requesting permission:', error);
     throw error;
