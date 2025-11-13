@@ -22,6 +22,7 @@
     "start:ios": "npx react-native run-ios --simulator 'iPhone 16'",
     "start:android": "npx react-native run-android",
     "build:apk:release": "cd android && ./gradlew assembleRelease && cd ..",
+    "build:apk:release:install": "cd android && ./gradlew assembleRelease && ./gradlew installRelease && cd .. && npm run play-finish-sound",
     "build:apk:debug": "cd android && ./gradlew assembleDebug && cd .. && npm run play-finish-sound"
   },
   "dependencies": {

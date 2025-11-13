@@ -240,6 +240,12 @@ npm start              # Start Metro bundler
 npm run android        # Run on Android
 npm run ios            # Run on iOS
 
+# Building
+npm run build:apk:release           # Build release APK only
+npm run build:apk:release:install   # Build + install release APK
+npm run build:apk:debug             # Build debug APK
+./build-release.sh                  # Build release with Metro support
+
 # Quality
 npm run lint           # Run ESLint
 npm run typecheck      # Run TypeScript checks
@@ -249,6 +255,56 @@ npm test               # Run tests
 npm run clean          # Remove node_modules
 npm run fresh          # Complete reinstall
 npm run reset          # Clear Metro cache
+```
+
+### Building Release APK
+
+#### Option 1: Build with Metro Support (Recommended for Testing)
+
+```bash
+# Terminal 1: Start Metro bundler
+npm start
+
+# Terminal 2: Build and install release APK
+./build-release.sh
+# OR
+npm run build:apk:release:install
+```
+
+**Benefits:**
+- ✅ Release APK connects to Metro bundler
+- ✅ Live reload works in release build
+- ✅ Fast iteration during testing
+- ✅ Test release optimizations with hot reload
+
+#### Option 2: Build Standalone Release APK
+
+```bash
+# Build only (no Metro needed)
+npm run build:apk:release
+
+# APK location:
+# android/app/build/outputs/apk/release/app-release.apk
+```
+
+**Use for:**
+- Final production builds
+- Distribution to testers
+- Play Store uploads
+
+#### Workflow Example
+
+```bash
+# 1. Start Metro in one terminal
+npm start
+
+# 2. In another terminal, build and install
+./build-release.sh
+
+# 3. App opens and connects to Metro
+# 4. Make code changes
+# 5. Shake device → Reload
+# 6. Test release optimizations with live reload!
 ```
 
 ### Code Style
