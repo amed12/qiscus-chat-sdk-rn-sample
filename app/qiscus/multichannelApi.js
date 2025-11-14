@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Qiscus from './index';
 import { APP_CONFIG } from '../config/appConfig';
+import { TIMING } from '../config/constants';
 
 const MULTICHANNEL_API = APP_CONFIG.api.multichannel;
 const QISMO_API = APP_CONFIG.api.qismo;
@@ -16,6 +17,22 @@ const STORAGE_KEYS = {
 };
 
 export const multichannelApi = {
+  /**
+   * Authenticate user with identity token
+   * Reusable function to verify and set user with proper wait time
+   */
+  async authenticateWithToken(userData) {
+    try {
+      await Qiscus.qiscus.setUserWithIdentityToken(userData);
+      // Give wait time for qiscus to load
+      await new Promise(resolve => setTimeout(resolve, TIMING.QISCUS_INIT_DELAY));
+      return true;
+    } catch (error) {
+      console.error('[MultichannelAPI] Failed to authenticate with token:', error);
+      return false;
+    }
+  },
+
   /**
    * Check if app is sessional
    * Sessional = create new room when previous room is resolved
@@ -141,21 +158,11 @@ export const multichannelApi = {
         // If room not resolved, always reuse
         if (!existingSession.isResolved) {
           console.log('[MultichannelAPI] Room not resolved, reusing existing room');
-          try {
-            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userData);
-          } catch (error) {
-            console.error('[MultichannelAPI] Failed to set user with identity token:', error);
-            return {
-              userId: existingSession.userId,
-              roomId: existingSession.roomId,
-              restored: false,
-              userData: existingSession.userData
-            };
-          }
+          const authenticated = await this.authenticateWithToken(existingSession.userData);
           return {
             userId: existingSession.userId,
             roomId: existingSession.roomId,
-            restored: true,
+            restored: authenticated,
             userData: existingSession.userData
           };
         }
@@ -167,21 +174,11 @@ export const multichannelApi = {
         if (!isSessional) {
           // Not sessional, reuse existing room even if resolved
           console.log('[MultichannelAPI] Not sessional, reusing existing room');
-          try {
-            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userData);
-          } catch (error) {
-            console.error('[MultichannelAPI] Failed to set user with identity token:', error);
-            return {
-              userId: existingSession.userId,
-              roomId: existingSession.roomId,
-              restored: false,
-              userData: existingSession.userData
-            };
-          }
+          const authenticated = await this.authenticateWithToken(existingSession.userData);
           return {
             userId: existingSession.userId,
             roomId: existingSession.roomId,
-            restored: true,
+            restored: authenticated,
             userData: existingSession.userData
           };
         }
@@ -222,7 +219,7 @@ export const multichannelApi = {
 
       // Step 4: Verify and set user with identity token
       const userData = await Qiscus.qiscus.verifyIdentityToken(identity_token);
-      await Qiscus.qiscus.setUserWithIdentityToken(userData);
+      await this.authenticateWithToken(userData);
       
       // Get user info from SDK
       const userId = Qiscus.qiscus.userData.email || Qiscus.qiscus.userData.id_str || Qiscus.qiscus.user_id;

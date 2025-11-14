@@ -17,6 +17,8 @@ import * as Qiscus from 'qiscus';
 import {registerDeviceToken} from '../../index';
 import {multichannelApi} from '../qiscus/multichannelApi';
 import {APP_CONFIG} from '../config/appConfig';
+// Optional: Use auth store for state management
+// import { useAuthStore } from '../store/authStore';
 
 export function LoginPage(props) {
   const storage = useAsyncStorage('qiscus');

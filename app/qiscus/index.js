@@ -2,6 +2,7 @@ import QiscusSDK from 'qiscus-sdk-core';
 import { Platform } from 'react-native';
 import EventEmitter from 'eventemitter3';
 import { APP_CONFIG } from '../config/appConfig';
+import { TIMING, SUPPORTED_FILE_TYPES } from '../config/constants';
 
 export const qiscus = new QiscusSDK();
 
@@ -12,9 +13,9 @@ export const getFileExtension = (name) =>
 /*
 Just Example for limit type of media file (image or video) , in Qiscus we support all type
  */
-export let SupportImageType = ['png', 'jpg', 'jpeg', 'gif'];
+export let SupportImageType = SUPPORTED_FILE_TYPES.IMAGES;
 export let SupportVideoType =
-	Platform.OS === 'android' ? ['mp4'] : ['mp4', 'mov'];
+	Platform.OS === 'android' ? SUPPORTED_FILE_TYPES.VIDEOS.ANDROID : SUPPORTED_FILE_TYPES.VIDEOS.IOS;
 
 export const isImageFile = (name) => {
 	return SupportImageType.includes(getFileExtension(name?.toLowerCase()));
@@ -25,19 +26,7 @@ export const isVideoFile = (name) => SupportVideoType.includes(getFileExtension(
 /*
 Just Example for limit type of attachment file, in Qiscus we support all type
  */
-export let SupportDocumentType = [
-	'doc',
-	'docx',
-	'xls',
-	'xlsx',
-	'ppt',
-	'pptx',
-	'odp',
-	'ods',
-	'odt',
-	'pdf',
-	'apk'
-];
+export let SupportDocumentType = SUPPORTED_FILE_TYPES.DOCUMENTS;
 
 /*
 Just Example for limit supported file, in Qiscus we support all type
@@ -111,12 +100,12 @@ export const waitForLogin = () => {
 				clearInterval(checkInterval);
 				resolve(true);
 			}
-		}, 300);
+		}, TIMING.LOGIN_CHECK_INTERVAL);
 		
 		// Timeout after 10 seconds
 		setTimeout(() => {
 			clearInterval(checkInterval);
 			resolve(false);
-		}, 10000);
+		}, TIMING.LOGIN_TIMEOUT);
 	});
 };

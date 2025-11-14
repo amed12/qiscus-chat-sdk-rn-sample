@@ -23,10 +23,23 @@ import Toolbar from 'components/Toolbar';
 import MessageList from 'components/MessageList';
 import Form from 'components/Form';
 import Empty from 'components/EmptyChat';
-import {getFileExtension, isImageFile, isUnSupportFileType, isVideoFile} from "../qiscus";
 import * as ImagePicker from 'react-native-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {multichannelApi} from '../qiscus/multichannelApi';
+import { TIMING, MESSAGE_STATUS, UI } from '../config/constants';
+import {
+	validateFile,
+	prepareFileForUpload,
+	getMessageContentType,
+	isUnsupportedFileType,
+} from '../utils/fileUtils';
+import {
+	prepareTextMessage,
+	prepareFileMessage,
+	updateMessageStatus,
+	sortMessagesByTimestamp,
+	createFileMessagePayload,
+} from '../utils/messageUtils';
 
 export default class ChatScreen extends React.Component {
 	state = {
@@ -64,8 +77,8 @@ export default class ChatScreen extends React.Component {
 			// Load room
 			const room = {id: roomId};
 			this.setState({ room });
-			// wait for qiscus ready on 3 seconds
-			await new Promise(resolve => setTimeout(resolve, 300));
+			// wait for qiscus ready
+			await new Promise(resolve => setTimeout(resolve, TIMING.QISCUS_INIT_DELAY));
 			
 			// Load messages
 			const messages = await Qiscus.qiscus.loadComments(roomId);
@@ -271,11 +284,11 @@ export default class ChatScreen extends React.Component {
 							isTyping: false,
 							typingUsername: null,
 						}),
-					850
+					TIMING.TYPING_INDICATOR_TIMEOUT
 				);
 			}
 		);
-	}, 300);
+	}, TIMING.TYPING_DEBOUNCE_DELAY);
 
 	_onSelectModal = () => {
 		this.setState(
@@ -291,8 +304,7 @@ export default class ChatScreen extends React.Component {
 		return ['Online presence', data];
 	};
 	_onNewMessage = (message) => {
-		console.log("halo")
-		console.log(message)
+		console.log('[ChatScreen] New message received:', message.unique_temp_id);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
@@ -304,21 +316,15 @@ export default class ChatScreen extends React.Component {
 
 	_onMessageRead = ({ comment }) => {
 		toast('message read');
-		// const date = new Date(comment.timestamp);
-		const results = this.messages
-			// .filter(it => new Date(it.timestamp) <= date)
-			.filter((it) => it.timestamp <= comment.timestamp)
-			.map((it) => ({ ...it, status: 'read' }));
-
-		const messages = results.reduce((result, item) => {
-			const uniqueId = item.unique_id || item.unique_temp_id;
-			result[uniqueId] = item;
-			return result;
-		}, {});
+		const updatedMessages = updateMessageStatus(
+			this.messages,
+			comment,
+			MESSAGE_STATUS.READ
+		);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
-				...messages,
+				...updatedMessages,
 			},
 		}));
 		return 'Message read';
@@ -326,46 +332,26 @@ export default class ChatScreen extends React.Component {
 
 	_onMessageDelivered = ({ comment }) => {
 		toast('message delivered');
-
-		const results = this.messages
-			.filter((it) => it.timestamp <= comment.timestamp && it.status !== 'read')
-			.map((it) => ({ ...it, status: 'delivered' }));
-
-		const messages = results.reduce((result, item) => {
-			const uniqueId = item.unique_id || item.unique_temp_id;
-			result[uniqueId] = item;
-			return result;
-		}, {});
-
+		const updatedMessages = updateMessageStatus(
+			this.messages,
+			comment,
+			MESSAGE_STATUS.DELIVERED
+		);
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
-				...messages,
+				...updatedMessages,
 			},
 		}));
 		return 'Message delivered';
 	};
 
 	_prepareMessage = (message) => {
-		const date = new Date();
-		return {
-			id: date.getTime(),
-			uniqueId: '' + date.getTime(),
-			unique_temp_id: '' + date.getTime(),
-			timestamp: date.getTime(),
-			type: 'text',
-			status: 'sending',
-			message: message,
-			email: Qiscus.currentUser().email,
-		};
+		return prepareTextMessage(message, Qiscus.currentUser().email);
 	};
 
 	_prepareFileMessage = (message, fileURI) => {
-		return {
-			...this._prepareMessage(message),
-			type: 'upload',
-			fileURI,
-		};
+		return prepareFileMessage(message, fileURI, Qiscus.currentUser().email);
 	};
 
 	_submitMessage = async (text) => {
@@ -404,31 +390,16 @@ export default class ChatScreen extends React.Component {
 		})
 			.then((resp) => {
 				resp.map((responses)=> {
-					let fileName = responses.name;
-					if (!fileName) {
-						const _fileName = responses.uri.split('/').pop();
-						const _fileType = responses.type
-							? responses.type.split('/').pop()
-							: 'jpeg';
-						fileName = `${_fileName}.${_fileType}`;
+					const source = prepareFileForUpload(responses);
+					
+					// Validate file
+					const validation = validateFile(source, false);
+					if (!validation.valid) {
+						toast(validation.error);
+						return Promise.reject(validation.error);
 					}
-					const source = {
-						uri: responses.uri,
-						name: fileName,
-						type: responses.type,
-						size: responses.size,
-					};
-					if (isUnSupportFileType(source?.name)) {
-						return Promise.reject('File not supported');
-					}
-					let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-					if (isNaN(sizeInMB)) {
-						return Promise.reject('File size required');
-					}
-					if (!(sizeInMB <= 20)) {
-						return Promise.reject('File size over');
-					}
-					this._onSendingFileOrMedia(source)
+					
+					this._onSendingFileOrMedia(source);
 				})
 			})
 			.catch(this._handleError);
@@ -452,29 +423,21 @@ export default class ChatScreen extends React.Component {
 			if (resp.errorMessage)
 				return console.log('error when getting file', resp.errorMessage);
 			resp.assets.map((responses) => {
-				let fileName;
-				if (!fileName) {
-					const _fileName = responses.uri.split('/').pop();
-					const _fileType = responses.type
-						? responses.type.split('/').pop()
-						: 'jpeg';
-					fileName = `${_fileName}.${_fileType}`;
-				}
-				const source = {
+				const source = prepareFileForUpload({
 					uri: responses.uri,
-					name: fileName,
+					name: responses.fileName,
 					type: responses.type,
 					size: responses.fileSize,
-				};
-				let sizeInMB = parseFloat((source.size / (1024 * 1024)).toFixed(2));
-				if (isNaN(sizeInMB) || sizeInMB === 0) {
-					return Promise.reject('File size required or empty');
+				});
+				
+				// Validate file (media has stricter size limit)
+				const validation = validateFile(source, true);
+				if (!validation.valid) {
+					toast(validation.error);
+					return Promise.reject(validation.error);
 				}
-				if (!(sizeInMB <= 2)) {
-					// Example limitation
-					return Promise.reject('File size cannot over from 2mb and cannot empty');
-				}
-				this._onSendingFileOrMedia(source)
+				
+				this._onSendingFileOrMedia(source);
 			})
 		}).catch(this._handleError);
 	};
@@ -498,7 +461,7 @@ export default class ChatScreen extends React.Component {
 							clearTimeout(timeoutId);
 							resolve();
 						});
-					}, 400);
+					}, TIMING.MESSAGE_SCROLL_DELAY);
 				}
 			);
 		});
@@ -543,8 +506,7 @@ export default class ChatScreen extends React.Component {
 			.catch((error) => console.log('Error when loading more comment', error));
 	};
 
-	_sortMessage = (messages) =>
-		messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+	_sortMessage = (messages) => sortMessagesByTimestamp(messages);
 
 	get isGroup() {
 		if (this.state.room == null || this.state.room.room_type == null) {
@@ -558,7 +520,7 @@ export default class ChatScreen extends React.Component {
 		if (room == null || room.participants == null) {
 			return;
 		}
-		const limit = 3;
+		const limit = UI.MAX_PARTICIPANTS_DISPLAY;
 		const overflowCount = room.participants.length - limit;
 		const participants = room.participants
 			.slice(0, limit)
@@ -590,14 +552,13 @@ export default class ChatScreen extends React.Component {
 						return console.log(progress.percent);
 					}
 					if (fileURL != null) {
-						const payload = JSON.stringify({
-							type: isImageFile(mediaOrDocs.name) || isVideoFile(mediaOrDocs.name) ? 'image' : mediaOrDocs.type,
-							content: {
-								url: fileURL,
-								file_name: mediaOrDocs.name,
-								caption: '',
-							},
-						});
+						const contentType = getMessageContentType(mediaOrDocs.name);
+						const payload = createFileMessagePayload(
+							fileURL,
+							mediaOrDocs.name,
+							contentType,
+							''
+						);
 						Qiscus.qiscus
 							.sendComment(
 								this.state.room.id,
