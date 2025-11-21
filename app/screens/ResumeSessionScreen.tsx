@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { clearMultichannelSession, loadMultichannelSession } from '../services/sessionService';
 import APP_CONFIG from '../config/appConfig';
+import type { MultichannelSession } from '../types/qiscus.types';
 
 type RootStackParamList = {
   Login: undefined;
@@ -24,7 +25,7 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'ResumeSession'>;
 
 export function ResumeSessionScreen({ navigation }: Props) {
-  const [userEmail, setUserEmail] = useState<string>('');
+  const [session, setSession] = useState<MultichannelSession | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -33,35 +34,33 @@ export function ResumeSessionScreen({ navigation }: Props) {
 
   const loadSessionData = async () => {
     try {
-      const storedUser = await loadMultichannelSession(APP_CONFIG.qiscus.appId);
-      if (storedUser) {
-        setUserEmail(storedUser.userId || 'User');
+      const storedSession = await loadMultichannelSession(APP_CONFIG.qiscus.appId);
+      if (storedSession) {
+        setSession(storedSession);
+      } else {
+        // No session found, redirect to login
+        navigation.replace('Login');
       }
-
     } catch (error) {
       console.error('[ResumeSession] Error loading session data:', error);
+      navigation.replace('Login');
     }
   };
 
   const handleEnterRoom = async () => {
+    if (!session) {
+      console.log('[ResumeSession] No session available');
+      navigation.replace('Login');
+      return;
+    }
+
     try {
       setIsLoading(true);
-
-      const result = await loadMultichannelSession(APP_CONFIG.qiscus.appId);
-      if (!result) {
-        console.log('[ResumeSession] No stored user data found');
-        navigation.replace('Login');
-        return;
-      }
-
-      const action = !result.isResolved ? 'restored' : 'created';
-      console.log(`[ResumeSession] Session ${action}, navigating to room:`, result.roomId);
-
-      // Navigate to chat
-      navigation.replace('Chat', { roomId: result.roomId });
+      const action = !session.isResolved ? 'restored' : 'created';
+      console.log(`[ResumeSession] Session ${action}, navigating to room:`, session.roomId);
+      navigation.replace('Chat', { roomId: session.roomId });
     } catch (error) {
-      console.error('[ResumeSession] Failed to restore session:', error);
-      // If restoration fails, go to login
+      console.error('[ResumeSession] Failed to navigate to chat:', error);
       navigation.replace('Login');
     } finally {
       setIsLoading(false);
@@ -102,7 +101,7 @@ export function ResumeSessionScreen({ navigation }: Props) {
               <Text style={styles.welcomeSubtitle}>
                 You're already logged in as
               </Text>
-              <Text style={styles.userEmail}>{userEmail}</Text>
+              <Text style={styles.userEmail}>{session?.userId || 'User'}</Text>
             </View>
 
             {/* Session Info */}

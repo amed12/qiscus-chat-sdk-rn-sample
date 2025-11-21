@@ -98,6 +98,24 @@ export const multichannelApi = {
   },
 
   /**
+   * Helper: Restore user session with identity token
+   */
+  async restoreUserSession(userDataToken: string): Promise<boolean> {
+    if (!Qiscus.qiscus.isLogin) {
+      try {
+        await Qiscus.qiscus.setUserWithIdentityToken(userDataToken);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        console.log('[MultichannelAPI] Session restored with internal storage');
+        return true;
+      } catch (error) {
+        console.error('[MultichannelAPI] Failed to set user with identity token:', error);
+        return false;
+      }
+    }
+    return true;
+  },
+
+  /**
    * Initiate chat with Multichannel API
    * Handles session restoration and new chat creation
    */
@@ -121,59 +139,21 @@ export const multichannelApi = {
       const existingSession = await this.tryRestoreSession(appId);
 
       if (existingSession) {
-        // If room not resolved, always reuse
-        if (!existingSession.isResolved) {
-          console.log('[MultichannelAPI] Room not resolved, reusing existing room');
-          if (!Qiscus.qiscus.isLogin) {
-            try {
-              // v3: setUserWithIdentityToken accepts token directly
-              await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userDataToken);
-              // delay 3 milliseconds
-              await new Promise((resolve) => setTimeout(resolve, 300));
-              console.log('[MultichannelAPI] Session restored with internal storage');
-            } catch (error) {
-              console.error('[MultichannelAPI] Failed to set user with identity token:', error);
-              return {
-                userId: existingSession.userId,
-                roomId: existingSession.roomId,
-                restored: false,
-                userDataToken: existingSession.userDataToken,
-              };
-            }
-          }
+        // Determine if we should reuse the existing session
+        const shouldReuseSession = !existingSession.isResolved || 
+          !(existingSession.isSessional || (await this.checkSessional(appId)));
+
+        if (shouldReuseSession) {
+          const reason = !existingSession.isResolved 
+            ? 'Room not resolved' 
+            : 'Not sessional';
+          console.log(`[MultichannelAPI] ${reason}, reusing existing room`);
+          
+          const restored = await this.restoreUserSession(existingSession.userDataToken);
           return {
             userId: existingSession.userId,
             roomId: existingSession.roomId,
-            restored: true,
-            userDataToken: existingSession.userDataToken,
-          };
-        }
-
-        // If room is resolved, check if app is sessional
-        const isSessional =
-          existingSession.isSessional || (await this.checkSessional(appId));
-
-        if (!isSessional) {
-          // Not sessional, reuse existing room even if resolved
-          console.log('[MultichannelAPI] Not sessional, reusing existing room');
-          try {
-            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userDataToken);
-            // delay 3 milliseconds
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            console.log('[MultichannelAPI] Session restored with internal storage');
-          } catch (error) {
-            console.error('[MultichannelAPI] Failed to set user with identity token:', error);
-            return {
-              userId: existingSession.userId,
-              roomId: existingSession.roomId,
-              restored: false,
-              userDataToken: existingSession.userDataToken,
-            };
-          }
-          return {
-            userId: existingSession.userId,
-            roomId: existingSession.roomId,
-            restored: true,
+            restored,
             userDataToken: existingSession.userDataToken,
           };
         }
