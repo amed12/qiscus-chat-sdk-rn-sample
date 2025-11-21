@@ -13,14 +13,13 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAsyncStorage } from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as Qiscus from '../qiscus';
 import { IQAccount } from 'qiscus-sdk-javascript/types/model';
 import { registerDeviceToken } from '../../index';
-import { multichannelApi } from '../qiscus/multichannelApi';
+import { loadMultichannelSession } from '../services/sessionService';
 import { APP_CONFIG } from '../config/appConfig';
-import type { InitiateChatResult } from '../types/qiscus.types';
+import multichannelApi from '../qiscus/multichannelApi';
 
 type RootStackParamList = {
   Login: undefined;
@@ -30,7 +29,6 @@ type RootStackParamList = {
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginPage({ navigation }: Props) {
-  const storage = useAsyncStorage('qiscus');
   const [userId, setUserId] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,29 +54,13 @@ export function LoginPage({ navigation }: Props) {
 
   const reInitiateChat = async (): Promise<void> => {
     try {
-      // Get stored user data for fallback
-      const storedData = await storage.getItem();
-      if (!storedData) {
+      const result = await loadMultichannelSession(APP_CONFIG.qiscus.appId);
+      if (!result) {
         console.log('[LoginScreen] No stored user data found');
         return;
       }
 
-      const userData = JSON.parse(storedData);
-      const storedUserId = userData.email || userData.username || 'guest-101';
-
-      console.log('[LoginScreen] Restoring session for:', storedUserId);
-
-      // Initiate chat with session restoration
-      const result: InitiateChatResult = await multichannelApi.initiateChat(
-        APP_CONFIG.qiscus.appId,
-        APP_CONFIG.qiscus.channelId,
-        storedUserId,
-        storedUserId,
-        undefined,
-        undefined
-      );
-
-      const action = result.restored ? 'restored' : 'created';
+      const action = result.isResolved ? 'restored' : 'created';
       console.log(`[LoginScreen] Session ${action}, navigating to room:`, result.roomId);
 
       // Navigate to chat
@@ -103,14 +85,13 @@ export function LoginPage({ navigation }: Props) {
 
       console.log('[LoginScreen] Starting chat for:', userIdTrimmed);
 
-      // Initiate chat (will check for existing session automatically)
-      const result: InitiateChatResult = await multichannelApi.initiateChat(
+      const result = await multichannelApi.initiateChat(
         APP_CONFIG.qiscus.appId,
         APP_CONFIG.qiscus.channelId,
         userIdTrimmed,
         displayNameTrimmed,
-        undefined,
-        undefined
+        null,
+        null  
       );
 
       const action = result.restored ? 'Session restored' : 'New chat initiated';
@@ -119,14 +100,6 @@ export function LoginPage({ navigation }: Props) {
         userId: result.userId,
         restored: result.restored,
       });
-
-      // Save user data for backward compatibility
-      await storage.setItem(
-        JSON.stringify({
-          email: result.userId,
-          username: result.userId,
-        })
-      );
 
       // Register device token for push notifications
       try {
@@ -146,7 +119,7 @@ export function LoginPage({ navigation }: Props) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, displayName, navigation, storage]);
+  }, [userId, displayName, navigation]);
 
   return (
     <SafeAreaView style={styles.safeArea}>

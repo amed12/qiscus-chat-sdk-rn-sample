@@ -1,43 +1,60 @@
-import React, {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {Platform} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {useAsyncStorage} from '@react-native-async-storage/async-storage';
 import messaging from '@react-native-firebase/messaging';
 import notifee, {AndroidImportance} from '@notifee/react-native';
 
 import * as Qiscus from 'qiscus';
 import {LoginPage as LoginScreen} from 'screens/LoginScreen';
+import {ResumeSessionScreen} from 'screens/ResumeSessionScreen';
 import ChatScreen from 'screens/ChatScreen';
+import { loadMultichannelSession } from './app/services/sessionService';
+import { APP_CONFIG } from './app/config/appConfig';
 
 const Stack = createNativeStackNavigator();
 
-export default function Application() {
-  const storage = useAsyncStorage('qiscus');
+const sleep = (durationMs) =>
+  new Promise((resolve) => setTimeout(resolve, durationMs));
+
+const useBootstrapRoute = () => {
+  const [state, setState] = useState({initialRoute: 'Login', isReady: false});
 
   useEffect(() => {
-    // Initialize Qiscus SDK
-    Qiscus.init();
-    
-    // Restore user session
-    storage.getItem().then(
-      (res) => {
-        if (res == null) return;
-        const data = JSON.parse(res);
-        Qiscus.qiscus.setUserWithIdentityToken({user: data});
-      },
-      (error) => {
-        console.log('error getting login data', error);
-      },
-    );
-  }, [storage]);
+    const bootstrap = async () => {
+      try {
+        Qiscus.init();
+        const storedUser = await loadMultichannelSession(APP_CONFIG.qiscus.appId);
 
+        if (!storedUser) {
+          console.log('[App] No stored user found');
+          setState({initialRoute: 'Login', isReady: true});
+          return;
+        }
+        console.log('[App] User found:', storedUser);
+        await Qiscus.qiscus.setUserWithIdentityToken(storedUser.userDataToken);
+        await sleep(300);
+
+        setState({initialRoute: 'ResumeSession', isReady: true});
+      } catch (error) {
+        console.log('[App] Error checking session:', error);
+        setState({initialRoute: 'Login', isReady: true});
+      }
+    };
+
+    bootstrap();
+  }, []);
+
+  return state;
+};
+
+const usePushNotifications = () => {
   useEffect(() => {
-    // Setup push notifications
+    let unsubscribe = null;
+
     const setupNotifications = async () => {
       try {
-        // Request permission
         const authStatus = await messaging().requestPermission();
         const enabled =
           authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
@@ -48,7 +65,6 @@ export default function Application() {
           return;
         }
 
-        // Create notification channel for Android
         if (Platform.OS === 'android') {
           await notifee.createChannel({
             id: 'general',
@@ -57,16 +73,14 @@ export default function Application() {
           });
         }
 
-        // Handle foreground messages
-        const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+        unsubscribe = messaging().onMessage(async (remoteMessage) => {
           console.log('FCM Message received:', remoteMessage);
-          
+
           try {
-            const payload = remoteMessage.data?.payload 
-              ? JSON.parse(remoteMessage.data.payload) 
+            const payload = remoteMessage.data?.payload
+              ? JSON.parse(remoteMessage.data.payload)
               : null;
 
-            // Display notification using Notifee
             await notifee.displayNotification({
               title: remoteMessage.notification?.title || 'New Message',
               body: payload?.message || remoteMessage.notification?.body || '',
@@ -89,20 +103,28 @@ export default function Application() {
             console.error('Error displaying notification:', error);
           }
         });
-
-        return unsubscribe;
       } catch (error) {
         console.error('Error setting up notifications:', error);
       }
     };
 
-    const unsubscribe = setupNotifications();
+    setupNotifications();
+
     return () => {
-      if (unsubscribe && typeof unsubscribe === 'function') {
+      if (unsubscribe) {
         unsubscribe();
       }
     };
   }, []);
+};
+
+export default function Application() {
+  const {initialRoute, isReady} = useBootstrapRoute();
+  usePushNotifications();
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
@@ -112,12 +134,12 @@ export default function Application() {
             headerShown: false,
             animation: 'slide_from_right',
           }}
-          initialRouteName="Login">
+          initialRouteName={initialRoute}>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="ResumeSession" component={ResumeSessionScreen} />
           <Stack.Screen name="Chat" component={ChatScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
-

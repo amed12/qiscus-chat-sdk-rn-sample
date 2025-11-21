@@ -92,8 +92,9 @@ export interface MultichannelInitiateChatResponse {
 export interface MultichannelSession {
   appId: string;
   userId: string;
-  userData: any;
+  userDataToken: string;
   roomId: number;
+  isSessional: boolean;
   isResolved: boolean;
 }
 
@@ -101,5 +102,5 @@ export interface InitiateChatResult {
   userId: string;
   roomId: number;
   restored: boolean;
-  userData?: any;
+  userDataToken: string;
 }

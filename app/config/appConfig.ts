@@ -31,8 +31,8 @@ interface AppConfiguration {
 export const APP_CONFIG: AppConfiguration = {
   // Qiscus Multichannel Configuration
   qiscus: {
-    appId: 'your-app-id',
-    channelId: 0,
+    appId: 'obbbw-qh0w3g85jirurwg',
+    channelId: 126308,
   },
 
   // API Configuration

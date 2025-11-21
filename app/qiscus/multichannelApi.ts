@@ -1,7 +1,11 @@
 import axios, { AxiosResponse } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Qiscus from './index';
 import { APP_CONFIG } from '../config/appConfig';
+import {
+  clearMultichannelSession,
+  loadMultichannelSession,
+  saveMultichannelSession,
+} from '../services/sessionService';
 import type {
   MultichannelInitiateChatRequest,
   MultichannelInitiateChatResponse,
@@ -11,15 +15,6 @@ import type {
 
 const MULTICHANNEL_API = APP_CONFIG.api.multichannel;
 const QISMO_API = APP_CONFIG.api.qismo;
-
-// Storage keys
-const STORAGE_KEYS = {
-  lastAppId: 'qiscus:lastAppId',
-  lastUserId: 'qiscus:lastUserId',
-  lastUserData: 'qiscus:lastUserData',
-  lastRoomId: 'qiscus:lastRoomId',
-  lastRoomIsResolved: 'qiscus:lastRoomIsResolved',
-} as const;
 
 interface SessionalResponse {
   data: {
@@ -52,25 +47,10 @@ export const multichannelApi = {
     try {
       console.log('[MultichannelAPI] Attempting to restore session...');
 
-      const sessionData = await AsyncStorage.multiGet([
-        STORAGE_KEYS.lastAppId,
-        STORAGE_KEYS.lastUserId,
-        STORAGE_KEYS.lastUserData,
-        STORAGE_KEYS.lastRoomId,
-        STORAGE_KEYS.lastRoomIsResolved,
-      ]);
-
-      // Parse stored values
-      const session: MultichannelSession = {
-        appId: sessionData[0][1] || '',
-        userId: sessionData[1][1] || '',
-        userData: sessionData[2][1] ? JSON.parse(sessionData[2][1]) : null,
-        roomId: Number(sessionData[3][1]),
-        isResolved: sessionData[4][1] === 'true',
-      };
+      const session = await loadMultichannelSession(appId);
 
       // Validate session data
-      if (!session.appId || !session.userId || !session.userData || !session.roomId) {
+      if (!session || !session.appId || !session.userId || !session.userDataToken || !session.roomId) {
         console.log('[MultichannelAPI] Incomplete session data');
         return null;
       }
@@ -82,12 +62,7 @@ export const multichannelApi = {
         return null;
       }
 
-      console.log('[MultichannelAPI] Session restored:', {
-        userId: session.userId,
-        roomId: session.roomId,
-        isResolved: session.isResolved,
-        userData: session.userData,
-      });
+      console.log('[MultichannelAPI] Session restored:', session);
 
       return session;
     } catch (error) {
@@ -99,29 +74,10 @@ export const multichannelApi = {
   /**
    * Save session to storage
    */
-  async saveSession(
-    appId: string,
-    userId: string,
-    roomId: number,
-    userData: any,
-    isResolved: boolean = false
-  ): Promise<void> {
+  async saveSession(session: MultichannelSession): Promise<void> {
     try {
-      await AsyncStorage.multiSet([
-        [STORAGE_KEYS.lastAppId, appId],
-        [STORAGE_KEYS.lastUserId, userId],
-        [STORAGE_KEYS.lastUserData, JSON.stringify(userData)],
-        [STORAGE_KEYS.lastRoomId, String(roomId)],
-        [STORAGE_KEYS.lastRoomIsResolved, String(isResolved)],
-      ]);
-
-      console.log('[MultichannelAPI] Session saved:', {
-        appId,
-        userId,
-        roomId,
-        isResolved,
-        userData,
-      });
+      await saveMultichannelSession(session);
+      console.log('[MultichannelAPI] Session saved:', session);
     } catch (error) {
       console.error('[MultichannelAPI] Failed to save session:', error);
       throw error;
@@ -133,13 +89,7 @@ export const multichannelApi = {
    */
   async clearSession(): Promise<void> {
     try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.lastAppId,
-        STORAGE_KEYS.lastUserId,
-        STORAGE_KEYS.lastUserData,
-        STORAGE_KEYS.lastRoomId,
-        STORAGE_KEYS.lastRoomIsResolved,
-      ]);
+      await clearMultichannelSession();
       console.log('[MultichannelAPI] Session cleared');
     } catch (error) {
       console.error('[MultichannelAPI] Failed to clear session:', error);
@@ -174,19 +124,42 @@ export const multichannelApi = {
         // If room not resolved, always reuse
         if (!existingSession.isResolved) {
           console.log('[MultichannelAPI] Room not resolved, reusing existing room');
+          if (!Qiscus.qiscus.isLogin) {
+            try {
+              // v3: setUserWithIdentityToken accepts token directly
+              await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userDataToken);
+              // delay 3 milliseconds
+              await new Promise((resolve) => setTimeout(resolve, 300));
+              console.log('[MultichannelAPI] Session restored with internal storage');
+            } catch (error) {
+              console.error('[MultichannelAPI] Failed to set user with identity token:', error);
+              return {
+                userId: existingSession.userId,
+                roomId: existingSession.roomId,
+                restored: false,
+                userDataToken: existingSession.userDataToken,
+              };
+            }
+          }
+          return {
+            userId: existingSession.userId,
+            roomId: existingSession.roomId,
+            restored: true,
+            userDataToken: existingSession.userDataToken,
+          };
+        }
+
+        // If room is resolved, check if app is sessional
+        const isSessional =
+          existingSession.isSessional || (await this.checkSessional(appId));
+
+        if (!isSessional) {
+          // Not sessional, reuse existing room even if resolved
+          console.log('[MultichannelAPI] Not sessional, reusing existing room');
           try {
-            // v3: setUserWithIdentityToken accepts token directly
-            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userData.token);
-            
-            // CRITICAL: Manually set internal storage for session restoration
-            // This is required by SDK v3 for proper session management
-            // @ts-ignore - Internal SDK storage API
-            Qiscus.qiscus.storage.setAppId(appId);
-            // @ts-ignore - Internal SDK storage API
-            Qiscus.qiscus.storage.setCurrentUser(existingSession.userData);
-            // @ts-ignore - Internal SDK storage API
-            Qiscus.qiscus.storage.setToken(existingSession.userData.token);
-            
+            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userDataToken);
+            // delay 3 milliseconds
+            await new Promise((resolve) => setTimeout(resolve, 300));
             console.log('[MultichannelAPI] Session restored with internal storage');
           } catch (error) {
             console.error('[MultichannelAPI] Failed to set user with identity token:', error);
@@ -194,47 +167,14 @@ export const multichannelApi = {
               userId: existingSession.userId,
               roomId: existingSession.roomId,
               restored: false,
-              userData: existingSession.userData,
+              userDataToken: existingSession.userDataToken,
             };
           }
           return {
             userId: existingSession.userId,
             roomId: existingSession.roomId,
             restored: true,
-            userData: existingSession.userData,
-          };
-        }
-
-        // If room is resolved, check if app is sessional
-        const isSessional = await this.checkSessional(appId);
-
-        if (!isSessional) {
-          // Not sessional, reuse existing room even if resolved
-          console.log('[MultichannelAPI] Not sessional, reusing existing room');
-          try {
-            await Qiscus.qiscus.setUserWithIdentityToken(existingSession.userData.token);
-            
-            // CRITICAL: Set internal storage
-            // @ts-ignore
-            Qiscus.qiscus.storage.setAppId(appId);
-            // @ts-ignore
-            Qiscus.qiscus.storage.setCurrentUser(existingSession.userData);
-            // @ts-ignore
-            Qiscus.qiscus.storage.setToken(existingSession.userData.token);
-          } catch (error) {
-            console.error('[MultichannelAPI] Failed to set user with identity token:', error);
-            return {
-              userId: existingSession.userId,
-              roomId: existingSession.roomId,
-              restored: false,
-              userData: existingSession.userData,
-            };
-          }
-          return {
-            userId: existingSession.userId,
-            roomId: existingSession.roomId,
-            restored: true,
-            userData: existingSession.userData,
+            userDataToken: existingSession.userDataToken,
           };
         }
 
@@ -268,12 +208,13 @@ export const multichannelApi = {
 
       const roomId = Number(customer_room.room_id);
       const isResolved = customer_room.is_resolved;
+      const isSessional = await this.checkSessional(appId);
 
-      console.log('[MultichannelAPI] Chat initiated:', { roomId, isResolved });
+      console.log('[MultichannelAPI] Initiate chat result:', response.data.data);
 
       // Step 5: Set user with identity token (v3: simplified)
       const userData = await Qiscus.qiscus.setUserWithIdentityToken(identity_token);
-      
+
       // CRITICAL: Set internal storage for new session
       // This ensures SDK maintains the session properly
       // @ts-ignore - Internal SDK storage API
@@ -293,13 +234,20 @@ export const multichannelApi = {
       });
 
       // Step 6: Save session to storage
-      await this.saveSession(appId, userIdFromSDK, roomId, userData, isResolved);
+      await this.saveSession({
+        appId,
+        userId: userIdFromSDK,
+        userDataToken: identity_token,
+        roomId,
+        isResolved,
+        isSessional,
+      });
 
       return {
         userId: userIdFromSDK,
         roomId,
         restored: false,
-        userData,
+        userDataToken: identity_token,
       };
     } catch (error) {
       console.error('[MultichannelAPI] Initiate chat error:', error);

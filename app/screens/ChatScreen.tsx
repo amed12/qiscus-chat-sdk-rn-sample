@@ -3,14 +3,11 @@ import {
 	Button,
 	Image,
 	Modal,
-	StatusBar,
 	StyleSheet,
 	Text,
 	TouchableOpacity,
 	View,
 	SafeAreaView,
-	ScrollView,
-	ActivityIndicator,
 } from 'react-native';
 import DocumentPicker, {
 	types,
@@ -20,22 +17,22 @@ import * as dateFns from 'date-fns';
 import toast from '../utils/toast';
 
 import * as Qiscus from '../qiscus';
-import { IQMessage, IQChatRoom, IQUser } from 'qiscus-sdk-javascript/types/model';
+import { IQMessage, IQChatRoom } from 'qiscus-sdk-javascript/types/model';
 import { qiscusEvents } from '../qiscus';
 import Toolbar from '../components/Toolbar';
 import MessageList from '../components/MessageList';
 import Form from '../components/Form';
 import Empty from '../components/EmptyChat';
-import { getFileExtension, isImageFile, isUnSupportFileType, isVideoFile } from '../qiscus';
+import { isUnSupportFileType } from '../qiscus';
 import * as ImagePicker from 'react-native-image-picker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { multichannelApi } from '../qiscus/multichannelApi';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { clearStoredSession } from '../services/sessionService';
 
 // Type definitions
 type RootStackParamList = {
 	Chat: { roomId: number };
 	Login: undefined;
+	ResumeSession: undefined;
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
@@ -265,18 +262,36 @@ export default class ChatScreen extends React.Component<Props, ChatScreenState> 
 		}
 	};
 
+	_handleBack = async (): Promise<void> => {
+		try {
+			// Check if user is logged in
+			const isLoggedIn = await Qiscus.isUserLoggedIn();
+			
+			// Check if we can go back in the navigation stack
+			if (this.props.navigation.canGoBack()) {
+				this.props.navigation.goBack();
+			} else {
+				// If no previous screen, navigate based on login status
+				if (isLoggedIn) {
+					// User is logged in, go to ResumeSession screen
+					this.props.navigation.replace('ResumeSession' as any);
+				} else {
+					// User not logged in, go to Login
+					this.props.navigation.replace('Login');
+				}
+			}
+		} catch (error) {
+			console.error('[ChatScreen] Back navigation error:', error);
+			// Fallback to Login screen
+			this.props.navigation.replace('Login');
+		}
+	};
+
 	_handleLogout = async (): Promise<void> => {
 		try {
 			console.log('[ChatScreen] Logging out...');
 
-			// Clear session storage
-			await multichannelApi.clearSession();
-
-			// Clear user storage
-			await AsyncStorage.removeItem('qiscus');
-
-			// v3: Clear Qiscus SDK using clearUser()
-			Qiscus.qiscus.clearUser();
+			await clearStoredSession();
 
 			console.log('[ChatScreen] Logout successful');
 
@@ -346,7 +361,7 @@ export default class ChatScreen extends React.Component<Props, ChatScreenState> 
 		} catch (error) {
 			this.handleError('setupEventListeners', error);
 		}
-	};;
+	};
 
 	componentWillUnmount() {
 		try {
@@ -390,7 +405,15 @@ export default class ChatScreen extends React.Component<Props, ChatScreenState> 
 							flexDirection: 'row',
 							flex: 0,
 							alignItems: 'center',
+							gap: 10,
 						}}>
+							<TouchableOpacity
+								onPress={this._handleBack}
+								style={{
+									padding: 5,
+								}}>
+								<Text style={{ fontSize: 24, color: '#333' }}>←</Text>
+							</TouchableOpacity>
 							<Image
 								source={{ uri: avatarURL || undefined }}
 								style={{
@@ -525,33 +548,34 @@ export default class ChatScreen extends React.Component<Props, ChatScreenState> 
 
 	_onMessageRead = ({ comment }: { comment: IQMessage }): string => {
 		toast('message read');
-		const commentTime = comment.timestamp.getTime();
-		const results = this.messages
-			.filter((it) => it.timestamp.getTime() <= commentTime)
-			.map((it) => ({ ...it, status: 'read' as const }));
-
-		const messages = results.reduce((result: Record<string, IQMessage>, item: IQMessage) => {
-			result[item.uniqueId] = item;
-			return result;
-		}, {});
-		this.setState((state) => ({
-			messages: {
-				...state.messages,
-				...messages,
-			},
-		}));
+		this.updateMessagesStatus(comment, 'read');
 		return 'Message read';
 	};
 
 	_onMessageDelivered = ({ comment }: { comment: IQMessage }): string => {
 		toast('message delivered');
+		this.updateMessagesStatus(comment, 'delivered', (message) => message.status !== 'read');
+		return 'Message delivered';
+	};
+
+	private updateMessagesStatus = (
+		comment: IQMessage,
+		status: IQMessage['status'],
+		filter?: (message: IQMessage) => boolean
+	): void => {
 		const commentTime = comment.timestamp.getTime();
+		const shouldUpdate = filter || (() => true);
 
-		const results = this.messages
-			.filter((it) => it.timestamp.getTime() <= commentTime && it.status !== 'read')
-			.map((it) => ({ ...it, status: 'delivered' as const }));
+		const updates = this.messages
+			.filter((message) => message.timestamp.getTime() <= commentTime)
+			.filter(shouldUpdate)
+			.map((message) => ({ ...message, status }));
 
-		const messages = results.reduce((result: Record<string, IQMessage>, item: IQMessage) => {
+		if (updates.length === 0) {
+			return;
+		}
+
+		const mapped = updates.reduce((result: Record<string, IQMessage>, item: IQMessage) => {
 			result[item.uniqueId] = item;
 			return result;
 		}, {});
@@ -559,10 +583,9 @@ export default class ChatScreen extends React.Component<Props, ChatScreenState> 
 		this.setState((state) => ({
 			messages: {
 				...state.messages,
-				...messages,
+				...mapped,
 			},
 		}));
-		return 'Message delivered';
 	};
 
 	// Use SDK's generateMessage method
@@ -891,6 +914,10 @@ const styles = StyleSheet.create({
 		display: 'flex',
 		flex: 1,
 		backgroundColor: '#fafafa',
+	},
+	chatBody: {
+		flex: 1,
+		width: '100%',
 	},
 	onlineStatus: {},
 	onlineStatusText: {
