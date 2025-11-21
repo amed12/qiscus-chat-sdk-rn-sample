@@ -101,7 +101,7 @@ export function ResumeSessionScreen({ navigation }: Props) {
               <Text style={styles.welcomeSubtitle}>
                 You're already logged in as
               </Text>
-              <Text style={styles.userEmail}>{session?.userId || 'User'}</Text>
+              <Text style={styles.userEmail}>{session?.userDisplayName || session?.userId || 'User'}</Text>
             </View>
 
             {/* Session Info */}

@@ -217,6 +217,8 @@ export const multichannelApi = {
       await this.saveSession({
         appId,
         userId: userIdFromSDK,
+        userDisplayName: username,
+        userAvatarUrl: avatarUrl || '',
         userDataToken: identity_token,
         roomId,
         isResolved,

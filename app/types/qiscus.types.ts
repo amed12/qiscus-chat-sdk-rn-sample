@@ -92,6 +92,8 @@ export interface MultichannelInitiateChatResponse {
 export interface MultichannelSession {
   appId: string;
   userId: string;
+  userDisplayName?: string;
+  userAvatarUrl?: string;
   userDataToken: string;
   roomId: number;
   isSessional: boolean;
