@@ -100,3 +100,5 @@ error_android.txt
 # Firebase (keep google-services.json but ignore backups)
 android/app/google-services_*.json
 ios/GoogleService-Info_*.plist
+ios/GoogleService-Info.plist
+ios/QiscusChatSDKRN/GoogleService-Info.plist
