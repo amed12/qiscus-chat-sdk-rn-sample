@@ -42,11 +42,7 @@ To test realtime messaging between users, open a second emulator/simulator and l
 
 ## Using your own Qiscus App ID
 
-```bash
-QISCUS_APP_ID=your-app-id yarn android
-```
-
-Or edit `src/client/QiscusClient.ts`:
+Edit `src/client/QiscusClient.ts` line 9:
 ```ts
 const APP_ID = 'your-app-id';
 ```
