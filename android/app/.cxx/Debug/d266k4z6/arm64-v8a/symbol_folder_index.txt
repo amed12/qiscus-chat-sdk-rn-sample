@@ -1,1 +1,0 @@
-/Users/asani/kantor-mobile/RN/qiscus-chat-sdk-rn-sample/android/app/build/intermediates/cxx/Debug/d266k4z6/obj/arm64-v8a

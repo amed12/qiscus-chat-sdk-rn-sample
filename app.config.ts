@@ -1,4 +1,8 @@
+import fs from 'fs';
 import type { ExpoConfig, ConfigContext } from 'expo/config';
+
+const hasGoogleServices = fs.existsSync('./google-services.json');
+const hasGoogleServicesPlist = fs.existsSync('./GoogleService-Info.plist');
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -19,12 +23,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#ffffff',
     },
     package: 'com.qiscus.chatsample',
-    googleServicesFile: './google-services.json',
+    // Only include if the file exists (gitignored — add your own for FCM push)
+    ...(hasGoogleServices && { googleServicesFile: './google-services.json' }),
   },
   ios: {
     supportsTablet: false,
     bundleIdentifier: 'com.qiscus.chatsample',
-    googleServicesFile: './GoogleService-Info.plist',
+    ...(hasGoogleServicesPlist && { googleServicesFile: './GoogleService-Info.plist' }),
   },
   plugins: [
     [
