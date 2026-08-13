@@ -16,7 +16,7 @@
 git clone https://github.com/qiscus/qiscus-chat-sdk-rn-sample
 cd qiscus-chat-sdk-rn-sample
 git checkout rewrite/expo-ts
-yarn install
+npm install --legacy-peer-deps
 ```
 
 ## Run on Android
@@ -24,14 +24,14 @@ yarn install
 1. Start an Android emulator from Android Studio (AVD Manager).
 2. Run:
    ```bash
-   yarn android
+   npm run android
    ```
    This builds the Expo dev-client and installs it on the emulator.
 
 ## Run on iOS (macOS only)
 
 ```bash
-yarn ios
+npm run ios
 ```
 
 ## Test login
@@ -51,6 +51,6 @@ const APP_ID = 'your-app-id';
 
 | Problem | Fix |
 |---------|-----|
-| Metro not starting | `yarn start --clear` |
+| Metro not starting | `npx expo start --clear` |
 | Build fails on Android | `cd android && ./gradlew clean && cd ..` |
-| Type errors | `yarn type-check` for details |
+| Type errors | `npm run type-check` for details |
