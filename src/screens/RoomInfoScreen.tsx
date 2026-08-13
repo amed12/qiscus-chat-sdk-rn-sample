@@ -150,7 +150,7 @@ export function RoomInfoScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   centered: { alignItems: 'center', justifyContent: 'center' },
   backBtn: { fontSize: 28, color: colors.primary, lineHeight: 32 },
   avatarSection: {
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
-    color: colors.textSecondary,
+    color: colors.textMuted,
     letterSpacing: 0.5,
   },
   addParticipantBtn: {
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   },
   addParticipantText: { color: colors.primary, fontWeight: '600' },
   removeBtn: { paddingHorizontal: spacing.sm },
-  removeBtnText: { color: colors.danger, fontSize: fontSize.md },
+  removeBtnText: { color: colors.errorSolid, fontSize: fontSize.md },
   infoSection: {
     backgroundColor: colors.surface,
     marginTop: spacing.md,
@@ -205,5 +205,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  fieldText: { fontSize: fontSize.base, color: colors.textPrimary },
+  fieldText: { fontSize: fontSize.base, color: colors.text },
 });

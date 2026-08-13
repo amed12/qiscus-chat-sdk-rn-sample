@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.messageIn,
   },
   bubbleMe: { backgroundColor: colors.messageOut },
-  text: { fontSize: fontSize.md, color: colors.textSecondary, lineHeight: 20 },
+  text: { fontSize: fontSize.md, color: colors.textMuted, lineHeight: 20 },
   image: { width: 200, height: 200, borderRadius: radius.sm },
   meta: { marginHorizontal: spacing.xs, alignItems: 'flex-end' },
   time: { fontSize: fontSize.xs, color: colors.textMuted },

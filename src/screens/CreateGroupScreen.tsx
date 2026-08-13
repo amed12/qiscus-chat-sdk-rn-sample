@@ -141,7 +141,7 @@ export function CreateGroupScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   loader: { flex: 1 },
   backBtn: { fontSize: 28, color: colors.primary, lineHeight: 32 },
   doneBtn: { fontSize: fontSize.base, color: colors.primary, fontWeight: '600' },
@@ -152,13 +152,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  nameInput: { fontSize: fontSize.lg, color: colors.textPrimary },
+  nameInput: { fontSize: fontSize.lg, color: colors.text },
   sectionLabel: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     fontSize: fontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
 });

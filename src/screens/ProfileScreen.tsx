@@ -143,14 +143,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cameraBtnText: { fontSize: 20 },
-  infoSection: { flex: 1, backgroundColor: colors.background },
+  infoSection: { flex: 1, backgroundColor: colors.bg },
   sectionHeader: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     fontSize: fontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
-    color: colors.textSecondary,
+    color: colors.textMuted,
   },
   field: {
     flexDirection: 'row',
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     height: 46,
   },
-  fieldInput: { flex: 1, fontSize: fontSize.base, color: colors.textPrimary },
+  fieldInput: { flex: 1, fontSize: fontSize.base, color: colors.text },
   fieldAction: { paddingLeft: spacing.sm },
   fieldActionText: { color: colors.primary, fontSize: fontSize.md },
   logoutBtn: {
@@ -173,5 +173,5 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
   },
-  logoutText: { color: colors.danger, fontSize: fontSize.base },
+  logoutText: { color: colors.errorSolid, fontSize: fontSize.base },
 });

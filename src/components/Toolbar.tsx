@@ -56,6 +56,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize.lg,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.text,
   },
 });

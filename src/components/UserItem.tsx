@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Avatar } from './Avatar';
-import { colors, spacing, fontSize } from '@/theme';
+import { colors, palette, spacing, fontSize } from '@/theme';
 import type { QiscusUser } from '@/client';
 
 interface UserItemProps {
@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  containerSelected: { backgroundColor: '#e8f8d8' },
+  containerSelected: { backgroundColor: palette.telaga50 },
   body: { flex: 1, marginLeft: spacing.md },
-  name: { fontSize: fontSize.base, fontWeight: '600', color: colors.textPrimary },
+  name: { fontSize: fontSize.base, fontWeight: '600', color: colors.text },
   email: { fontSize: fontSize.md, color: colors.textMuted },
 });

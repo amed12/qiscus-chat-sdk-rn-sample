@@ -62,10 +62,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.base,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: colors.text,
   },
   time: { fontSize: fontSize.xs, color: colors.textMuted },
-  lastMsg: { flex: 1, fontSize: fontSize.md, color: colors.textSecondary },
+  lastMsg: { flex: 1, fontSize: fontSize.md, color: colors.textMuted },
   badge: {
     backgroundColor: colors.primary,
     borderRadius: 10,

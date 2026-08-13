@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    color: colors.textPrimary,
+    color: colors.text,
   },
   submitBtn: {
     backgroundColor: colors.primary,

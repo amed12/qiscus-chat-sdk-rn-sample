@@ -205,7 +205,7 @@ export function ChatScreen({ navigation, route }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   list: { flex: 1 },
   dateRow: { alignItems: 'center', marginVertical: spacing.sm },
   dateBadge: {

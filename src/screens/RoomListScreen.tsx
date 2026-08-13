@@ -62,7 +62,7 @@ export function RoomListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   loader: { flex: 1 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { color: colors.textMuted },

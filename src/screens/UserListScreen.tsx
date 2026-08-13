@@ -74,7 +74,7 @@ export function UserListScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   loader: { flex: 1 },
   backBtn: { fontSize: 28, color: colors.primary, lineHeight: 32 },
   groupBtn: {
@@ -85,17 +85,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  groupBtnText: { fontSize: fontSize.base, color: colors.textPrimary },
+  groupBtnText: { fontSize: fontSize.base, color: colors.text },
   sectionHeader: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
   },
   sectionLabel: {
     fontSize: fontSize.xs,
     fontWeight: '600',
     textTransform: 'uppercase',
-    color: colors.textSecondary,
+    color: colors.textMuted,
     letterSpacing: 0.5,
   },
 });

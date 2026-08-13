@@ -1,6 +1,6 @@
 import React from 'react';
 import { Image, View, Text, StyleSheet } from 'react-native';
-import { colors, radius } from '@/theme';
+import { colors, palette, radius } from '@/theme';
 
 interface AvatarProps {
   uri?: string | null;
@@ -34,7 +34,7 @@ export function Avatar({ uri, name = '?', size = 40 }: AvatarProps) {
 const styles = StyleSheet.create({
   image: { resizeMode: 'cover' },
   placeholder: {
-    backgroundColor: colors.primary,
+    backgroundColor: palette.samudra800,
     alignItems: 'center',
     justifyContent: 'center',
   },

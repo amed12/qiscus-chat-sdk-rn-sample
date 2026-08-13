@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingHorizontal: spacing.sm,
-    color: colors.textPrimary,
+    color: colors.text,
     fontSize: 14,
     maxHeight: 120,
   },
