@@ -12,49 +12,62 @@ Built with **Expo SDK 52 + TypeScript**, following patterns inspired by [GetStre
 |----------|---------|
 | **Auth** | Login with userId + userKey, persist session, logout |
 | **Rooms** | Room list with unread badge, 1-on-1 DM, group chat |
-| **Messaging** | Send/receive text, optimistic UI, pagination (load more) |
+| **Messaging** | Send/receive text, optimistic UI, load-more pagination |
 | **Attachments** | Image/video picker, file picker, upload with progress, size/type validation |
 | **Realtime** | Typing indicator, online presence, read/delivered receipts |
-| **Group** | Create group, add/remove participants, edit name |
+| **Group** | Create group, add/remove participants, edit name & avatar |
 | **Profile** | Edit display name, change avatar, view user info |
-| **Push** | expo-notifications device token registration |
+| **Push** | expo-notifications device token registration (FCM optional) |
 | **i18n** | English + Bahasa Indonesia via i18next |
+| **Theme** | Qiscus Brand Color System 2026 (Samudra, Telaga, Kabut, Pandan …) |
+
+---
 
 ## Architecture
 
 ```
 src/
-├── client/       QiscusClient (typed SDK wrapper), events, types, fileUtils
-├── context/      ChatContext — connection state & auth
-├── hooks/        useAuth, useRooms, useMessages, useSendMessage, useTyping,
-│                 useOnlinePresence, usePushToken
-├── components/   Toolbar, Avatar, RoomItem, MessageBubble, MessageInput…
+├── client/       QiscusClient.ts  — typed wrapper around qiscus-sdk-core 2.16.8
+│                 events.ts        — TypedEventEmitter (replaces xstream + mitt)
+│                 types.ts         — Room, Message, User, … domain types
+│                 fileUtils.ts     — file-type & size validation
+├── context/      ChatContext.tsx   — auth + connection state (React Context)
+├── hooks/        useAuth, useRooms, useMessages, useSendMessage,
+│                 useTyping, useOnlinePresence, usePushToken
+├── components/   Toolbar, Avatar, RoomItem, MessageBubble,
+│                 MessageInput, TypingIndicator, UserItem
 ├── screens/      Login, RoomList, Chat, UserList, CreateGroup, Profile, RoomInfo
-├── navigation/   RootNavigator (React Navigation v7 native stack)
-├── theme/        Design tokens (colors, spacing, fontSize)
-└── i18n/         en.ts + id.ts
+├── navigation/   RootNavigator — React Navigation v7 native stack
+├── theme/        tokens.ts — palette + semantic color tokens, spacing, typography
+└── i18n/         locales/en.ts + locales/id.ts
 ```
 
-Data flows: `QiscusSDK` → `QiscusClient` → `qiscusEvents` → hooks → screens.  
-Screens never import the SDK directly.
+Data flow: `qiscus-sdk-core` → `QiscusClient` → `qiscusEvents` → hooks → screens.  
+Screens never import the SDK or `qiscusClient` directly (except simple one-shot fetches).
+
+---
 
 ## Getting started
 
 ### Prerequisites
 
-- Node 20+, yarn 4+
-- Android Studio + emulator **or** Xcode + simulator
-- Expo CLI: `npm i -g expo-cli`
+| Tool | Version |
+|------|---------|
+| Node | 20+ |
+| npm | 10+ |
+| Expo CLI | latest — `npm i -g expo-cli` |
+| Android Studio | latest + emulator API 33+ |
+| Xcode | 15+ (macOS only, for iOS) |
 
 ### Install & run
 
 ```bash
-git clone https://github.com/qiscus/qiscus-chat-sdk-rn-sample
+git clone https://github.com/amed12/qiscus-chat-sdk-rn-sample
 cd qiscus-chat-sdk-rn-sample
 git checkout rewrite/expo-ts
 
-yarn install
-yarn android        # or: yarn ios
+npm install --legacy-peer-deps
+npm run android     # or: npm run ios
 ```
 
 ### App ID
@@ -62,31 +75,89 @@ yarn android        # or: yarn ios
 The app uses the public `sdksample` App ID by default. To use your own:
 
 ```bash
-QISCUS_APP_ID=your-app-id yarn android
+QISCUS_APP_ID=your-app-id npm run android
 ```
 
-Or edit `src/client/QiscusClient.ts` directly.
+Or edit `src/client/QiscusClient.ts`:
+```ts
+const APP_ID = 'your-app-id';
+```
 
-### Default credentials
+### Default test credentials
 
 | Field | Value |
 |-------|-------|
 | User ID | `guest-101` |
 | User Key | `passkey` |
 
-Try multiple accounts (`guest-101`, `guest-102`) to test realtime messaging between users.
+Open two emulators and log in as `guest-101` / `guest-102` to test realtime features end-to-end.
+
+---
 
 ## Scripts
 
 ```bash
-yarn start          # Expo Metro bundler
-yarn android        # build + run Android
-yarn ios            # build + run iOS
-yarn lint           # ESLint
-yarn format         # Prettier
-yarn type-check     # TypeScript
-yarn test           # Jest
+npm start           # Expo Metro bundler
+npm run android     # build + run on Android emulator
+npm run ios         # build + run on iOS simulator
+npm run lint        # ESLint (flat config)
+npm run format      # Prettier
+npm run type-check  # TypeScript strict check
+npm test            # Jest (jest-expo)
 ```
+
+---
+
+## Android support
+
+| Setting | Value |
+|---------|-------|
+| `minSdkVersion` | 24 (Android 7.0) |
+| `targetSdkVersion` | 34 (Play Store requirement) |
+| `compileSdkVersion` | 35 (Android 15) |
+| `buildToolsVersion` | 35.0.0 |
+| Gradle Plugin | 8.x |
+
+The `android/` folder is fully generated by `expo prebuild` — do not edit it manually.  
+To regenerate after native config changes:
+```bash
+npx expo prebuild --clean --platform android
+```
+
+---
+
+## Theme & colors
+
+Colors follow the **Qiscus Brand Color System 2026**. All named after Indonesian nature words.
+
+| Semantic token | Brand name | HEX | Role |
+|---------------|-----------|-----|------|
+| `colors.primary` | Telaga-600 | `#1F70DD` | Button / primary action |
+| `colors.accentDeep` | Samudra-800 | `#01416C` | Hero brand navy |
+| `colors.bg` | Kapas | `#FFFFFF` | Page background |
+| `colors.surface` | Kabut-50 | `#F5F5F2` | Cards / sheets |
+| `colors.text` | Arang / Kabut-900 | `#14181B` | Body text |
+| `colors.online` | Pandan-400 | `#74C162` | Online presence dot |
+| `colors.errorSolid` | Merah-600 | `#D71627` | Error / destructive |
+
+Always import from `@/theme` — never hardcode hex values.
+
+---
+
+## Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `expo` | ~52.0.x | Framework |
+| `react-native` | 0.76.x | Runtime |
+| `qiscus-sdk-core` | ^2.16.8 | Qiscus Chat SDK |
+| `@react-navigation/native-stack` | ^7.x | Navigation |
+| `expo-image-picker` | ~16.x | Image/video picker |
+| `expo-document-picker` | ~13.x | File picker |
+| `expo-notifications` | ~0.29.x | Push notifications |
+| `i18next` + `react-i18next` | ^23.x / ^15.x | Internationalisation |
+
+---
 
 ## Docs
 
@@ -99,6 +170,8 @@ yarn test           # Jest
 - [Features: Group](docs/features/group.md)
 - [Features: Push notifications](docs/features/push-notifications.md)
 - [Contributing](CONTRIBUTING.md)
+
+---
 
 ## Contributing
 
