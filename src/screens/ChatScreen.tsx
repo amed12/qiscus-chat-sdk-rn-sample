@@ -173,7 +173,10 @@ export function ChatScreen({ navigation, route }: Props) {
       <FlatList<ListItem>
         ref={listRef}
         data={listItems}
-        keyExtractor={(item) => item.id?.toString() ?? item.unique_temp_id}
+        keyExtractor={(item) => {
+          if ('unique_temp_id' in item) return item.unique_temp_id;
+          return item.id;
+        }}
         renderItem={renderItem}
         onEndReached={isLoadMoreable ? loadMore : undefined}
         onEndReachedThreshold={0.2}

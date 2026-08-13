@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "prefabPath": "/Users/asani/.gradle/caches/modules-2/files-2.1/com.google.prefab/cli/2.1.0/aa32fec809c44fa531f01dcfb739b5b3304d3050/cli-2.1.0-all.jar",
+  "packages": [
+    "/Users/asani/.gradle/caches/8.13/transforms/13370717fd5752dd2c6147cd3a94163a/transformed/react-android-0.79.2-debug/prefab",
+    "/Users/asani/kantor-mobile/RN/qiscus-chat-sdk-rn-sample/node_modules/react-native-reanimated/android/build/intermediates/prefab_package/debug/prefab",
+    "/Users/asani/.gradle/caches/8.13/transforms/7fa9a29be46e46a12bdcd913faf6b7c6/transformed/hermes-android-0.79.2-debug/prefab",
+    "/Users/asani/.gradle/caches/8.13/transforms/94b1cc03364ae8f1db27fa7fea536b5b/transformed/fbjni-0.7.0/prefab"
+  ]
+}

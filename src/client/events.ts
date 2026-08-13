@@ -17,7 +17,8 @@ class TypedEventEmitter {
 
   on<K extends keyof QiscusEventMap>(event: K, listener: Listener<QiscusEventMap[K]>): () => void {
     if (!this.listeners[event]) {
-      this.listeners[event] = [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.listeners as any)[event] = [];
     }
     (this.listeners[event] as Array<Listener<QiscusEventMap[K]>>).push(listener);
     return () => this.off(event, listener);
@@ -26,7 +27,8 @@ class TypedEventEmitter {
   off<K extends keyof QiscusEventMap>(event: K, listener: Listener<QiscusEventMap[K]>): void {
     const list = this.listeners[event] as Array<Listener<QiscusEventMap[K]>> | undefined;
     if (!list) return;
-    this.listeners[event] = list.filter((l) => l !== listener) as typeof list;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (this.listeners as any)[event] = list.filter((l) => l !== listener);
   }
 
   emit<K extends keyof QiscusEventMap>(event: K, data: QiscusEventMap[K]): void {
