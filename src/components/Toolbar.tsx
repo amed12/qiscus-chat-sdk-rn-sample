@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, fontSize } from '@/theme';
 
 interface ToolbarProps {
@@ -10,8 +11,9 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ title, left, right, meta }: ToolbarProps) {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + spacing.sm }]}>
       <View style={styles.row}>
         {left != null && <View style={styles.side}>{left}</View>}
         <View style={styles.center}>

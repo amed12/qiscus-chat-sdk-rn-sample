@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '@/hooks';
@@ -27,6 +28,7 @@ export function LoginScreen({ navigation }: Props) {
   const [userId, setUserId] = useState('guest-101');
   const [userKey, setUserKey] = useState('passkey');
   const [loading, setLoading] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const handleSubmit = async () => {
     if (!userId.trim() || !userKey.trim()) return;
@@ -48,7 +50,7 @@ export function LoginScreen({ navigation }: Props) {
           source={require('../../assets/bg-pattern.png')}
           style={styles.background}
         >
-          <View style={styles.container}>
+          <View style={[styles.container, { paddingTop: insets.top + 45, paddingBottom: insets.bottom + 45 }]}>
             <Image source={require('../../assets/logo.png')} style={styles.logo} />
             <View style={styles.form}>
               <View style={styles.fieldGroup}>
