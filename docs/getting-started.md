@@ -14,8 +14,6 @@
 
 ```bash
 git clone https://github.com/qiscus/qiscus-chat-sdk-rn-sample
-cd qiscus-chat-sdk-rn-sample
-git checkout rewrite/expo-ts
 npm install --legacy-peer-deps
 ```
 
