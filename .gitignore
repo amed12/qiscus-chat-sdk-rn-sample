@@ -57,3 +57,17 @@ buck-out/
 
 # CocoaPods
 /ios/Pods/
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Env
+.env
+.env.local
+google-services.json
+GoogleService-Info.plist
+
+# TypeScript
+*.tsbuildinfo
