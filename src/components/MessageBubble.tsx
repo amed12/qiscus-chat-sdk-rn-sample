@@ -25,17 +25,17 @@ function StatusIcon({ status }: { status: QiscusMessage['status'] }) {
     const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
     return (
       <Animated.Image
-        source={require('../../assets/ic_sending@2x.png')}
+        source={require('../../assets/ic_sending.png')}
         style={[styles.statusIcon, { transform: [{ rotate }] }]}
       />
     );
   }
   if (status === 'read') {
-    return <Image source={require('../../assets/ic_read@2x.png')} style={styles.statusIcon} />;
+    return <Image source={require('../../assets/ic_read.png')} style={styles.statusIcon} />;
   }
   if (status === 'delivered' || status === 'sent') {
     return (
-      <Image source={require('../../assets/ic_delivered@2x.png')} style={styles.statusIcon} />
+      <Image source={require('../../assets/ic_delivered.png')} style={styles.statusIcon} />
     );
   }
   return null;

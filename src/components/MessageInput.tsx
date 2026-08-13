@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { colors, spacing } from '@/theme';
 
@@ -11,6 +12,7 @@ interface MessageInputProps {
 export function MessageInput({ onSend, onAttach }: MessageInputProps) {
   const { t } = useTranslation();
   const [text, setText] = useState('');
+  const insets = useSafeAreaInsets();
 
   const handleSend = () => {
     const trimmed = text.trim();
@@ -20,9 +22,9 @@ export function MessageInput({ onSend, onAttach }: MessageInputProps) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: insets.bottom || 4 }]}>
       <TouchableOpacity style={styles.btn} onPress={onAttach}>
-        <Image source={require('../../assets/ic_file_attachment@2x.png')} style={styles.icon} />
+        <Image source={require('../../assets/ic_file_attachment.png')} style={styles.icon} />
       </TouchableOpacity>
       <TextInput
         style={styles.input}
@@ -35,7 +37,7 @@ export function MessageInput({ onSend, onAttach }: MessageInputProps) {
         multiline
       />
       <TouchableOpacity style={styles.btn} onPress={handleSend}>
-        <Image source={require('../../assets/ic_check@2x.png')} style={styles.icon} />
+        <Image source={require('../../assets/ic_check.png')} style={styles.icon} />
       </TouchableOpacity>
     </View>
   );
