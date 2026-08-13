@@ -25,6 +25,7 @@ declare module 'qiscus-sdk-core' {
     getRoomsInfo(params: Record<string, unknown>): Promise<unknown>;
     chatTarget(userId: string): Promise<unknown>;
     createGroupRoom(name: string, userIds: string[], avatarURL?: string): Promise<unknown>;
+    getOrCreateRoomByChannel(channel: string, name?: string, avatarURL?: string): Promise<unknown>;
     updateRoom(params: Record<string, unknown>): Promise<unknown>;
     addParticipantsToGroup(roomId: number, userIds: string[]): Promise<unknown[]>;
     removeParticipantsFromGroup(roomId: number, userIds: string[]): Promise<void>;

@@ -109,6 +109,10 @@ class QiscusClient {
     return this.sdk.createGroupRoom(name, userIds, avatarURL) as Promise<QiscusRoom>;
   }
 
+  getOrCreateRoomByChannel(channelId: string, name?: string, avatarURL?: string): Promise<QiscusRoom> {
+    return this.sdk.getOrCreateRoomByChannel(channelId, name, avatarURL) as Promise<QiscusRoom>;
+  }
+
   updateRoom(params: {
     id: number;
     room_name?: string;
