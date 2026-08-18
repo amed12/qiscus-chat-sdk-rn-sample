@@ -71,3 +71,11 @@ GoogleService-Info.plist
 
 # TypeScript
 *.tsbuildinfo
+
+# Editor & IDE configs (local, not for sharing)
+.zed/
+.vscode/
+.cursor/
+.windsurf/
+*.swp
+*.swo
